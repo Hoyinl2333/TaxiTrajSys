@@ -84,12 +84,4 @@ public class GridCell {
         }
         return result;
     }
-
-    // getter方法
-    public int getRow() { return row; }
-    public int getCol() { return col; }
-    public double getMinLon() { return minLon; }
-    public double getMinLat() { return minLat; }
-    public double getMaxLon() { return maxLon; }
-    public double getMaxLat() { return maxLat; }
 }
