@@ -3,12 +3,12 @@
  * 根据时间段和地理范围查找出租车
  */
 function searchTaxisInArea() {
-    var startTime = document.getElementById('startTime').value;
-    var endTime = document.getElementById('endTime').value;
-    var topLeftLng = document.getElementById('topLeftLng').value;
-    var topLeftLat = document.getElementById('topLeftLat').value;
-    var bottomRightLng = document.getElementById('bottomRightLng').value;
-    var bottomRightLat = document.getElementById('bottomRightLat').value;
+    var startTime = document.getElementById('f3_startTime').value;
+    var endTime = document.getElementById('f3_endTime').value;
+    var topLeftLng = document.getElementById('f3_topLeftLng').value;
+    var topLeftLat = document.getElementById('f3_topLeftLat').value;
+    var bottomRightLng = document.getElementById('f3_bottomRightLng').value;
+    var bottomRightLat = document.getElementById('f3_bottomRightLat').value;
 
     // 验证输入
     if (!startTime || !endTime || !topLeftLng || !topLeftLat || !bottomRightLng || !bottomRightLat) {
