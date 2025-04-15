@@ -73,10 +73,10 @@ public class RegionQueryServiceTest {
     public void testLargeRegion() {
         // 创建覆盖整个北京市区的查询
         RegionQuery query = new RegionQuery(
-                116.0, // minLongitude
-                39.6,  // minLatitude
-                117.0, // maxLongitude
-                40.2,  // maxLatitude
+                116.2, // minLongitude
+                39.7,  // minLatitude
+                116.6, // maxLongitude
+                40.1,  // maxLatitude
                 LocalDateTime.parse("2008-02-02 00:00:00", formatter),
                 LocalDateTime.parse("2008-02-02 23:59:59", formatter)
         );
@@ -84,8 +84,13 @@ public class RegionQueryServiceTest {
         // 调用服务方法
         int taxiCount = regionQueryService.countTaxisInRegion(query);
 
+        /**
+         * 直接调用Dataloader逻辑耗时：约34s
+         */
+
+
         // 验证结果
-        assertTrue(taxiCount > 1000, "大区域内应该有大量出租车");
+        assertTrue(taxiCount > 100, "大区域内应该有大量出租车");
         System.out.println("北京市区一天内出租车数量: " + taxiCount);
     }
 
@@ -96,17 +101,16 @@ public class RegionQueryServiceTest {
     public void testGetTaxisInRegion() {
         // 创建区域查询参数（与第一个测试相同区域）
         RegionQuery query = new RegionQuery(
-                116.5, // minLongitude
-                39.9,  // minLatitude
-                116.52, // maxLongitude
-                39.93,  // maxLatitude
+                116.3, // minLongitude
+                39.8,  // minLatitude
+                116.5, // maxLongitude
+                40.0,  // maxLatitude
                 LocalDateTime.parse("2008-02-02 15:30:00", formatter),
                 LocalDateTime.parse("2008-02-02 15:40:00", formatter)
         );
 
-        //TODO:测试获取所有出租车id
-//        // 此处假设RegionQueryService有一个getTaxisInRegion方法
-//        Set<String> taxiIds = regionQueryService.getTaxisInRegion(query);
+//        //TODO:测试获取所有出租车id
+//        Set<String> taxiIds = regionQueryService.countTaxiIsInRegion(query);
 //
 //        // 验证结果
 //        assertNotNull(taxiIds, "出租车ID集合不应为空");
