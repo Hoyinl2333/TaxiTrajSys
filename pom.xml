@@ -24,7 +24,7 @@
 	<!-- 项目的构建属性 -->
 	<properties>
 		<!-- 设置 Java 编译版本 -->
-		<java.version>22</java.version>
+		<java.version>21</java.version>
 	</properties>
 
 	<!-- 项目依赖列表 -->

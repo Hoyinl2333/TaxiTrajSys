@@ -26,19 +26,20 @@
     <h3>F3: 区域范围查找</h3>
     <div class="form-row">
         <label>时间段:</label>
-        <input type="datetime-local" id="startTime">
+        <input type="datetime-local" id="f3_startTime" min="2008-02-02T00:00" max="2008-02-08T11:59">
         <span>至</span>
-        <input type="datetime-local" id="endTime">
+        <input type="datetime-local" id="f3_endTime" min="2008-02-02T00:00" max="2008-02-08T11:59">
+
     </div>
     <div class="form-row">
         <label>左上角坐标:</label>
-        <input type="text" id="topLeftLng" placeholder="经度">
-        <input type="text" id="topLeftLat" placeholder="纬度">
+        <input type="text" id="f3_topLeftLng" placeholder="经度">
+        <input type="text" id="f3_topLeftLat" placeholder="纬度">
     </div>
     <div class="form-row">
         <label>右下角坐标:</label>
-        <input type="text" id="bottomRightLng" placeholder="经度">
-        <input type="text" id="bottomRightLat" placeholder="纬度">
+        <input type="text" id="f3_bottomRightLng" placeholder="经度">
+        <input type="text" id="f3_bottomRightLat" placeholder="纬度">
     </div>
     <button id="areaSearchBtn">区域查找</button>
 </div>
@@ -48,20 +49,22 @@
     <h3>F4: 区域车流密度分析</h3>
     <div class="form-row">
         <label>时间段:</label>
-        <input type="datetime-local" id="densityStartTime">
+        <input type="datetime-local" id="f4_startTime" min="2008-02-02T00:00" max="2008-02-08T11:59">
         <span>至</span>
-        <input type="datetime-local" id="densityEndTime">
+        <input type="datetime-local" id="f4_endTime" min="2008-02-02T00:00" max="2008-02-08T11:59">
     </div>
+
     <div class="form-row">
         <label>左上角坐标:</label>
-        <input type="text" id="densityTopLeftLng" placeholder="经度">
-        <input type="text" id="densityTopLeftLat" placeholder="纬度">
+        <input type="text" id="f4_topLeftLng" placeholder="经度">
+        <input type="text" id="f4_topLeftLat" placeholder="纬度">
     </div>
     <div class="form-row">
         <label>右下角坐标:</label>
-        <input type="text" id="densityBottomRightLng" placeholder="经度">
-        <input type="text" id="densityBottomRightLat" placeholder="纬度">
+        <input type="text" id="f4_bottomRightLng" placeholder="经度">
+        <input type="text" id="f4_bottomRightLat" placeholder="纬度">
     </div>
+
     <div class="form-row">
         <label>网格半径(r):</label>
         <input type="number" id="gridRadius" placeholder="网格半径" value="0.001">
