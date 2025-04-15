@@ -8,5 +8,4 @@ import java.util.Set;
 public class RegionQueryResult {
     private int taxiCount;           // 出租车数量
     private Set<String> taxiIds;     // 出租车ID集合
-
 }
