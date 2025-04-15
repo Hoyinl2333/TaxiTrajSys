@@ -13,7 +13,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 /**
  * f3区域查询服务
@@ -71,6 +70,16 @@ public class RegionQueryService {
      * @return
      */
     private int countTaxisInRegionDirect(RegionQuery query) {
+        // 调用getTaxisInRegionDirect 实现
+        return getTaxisInRegionDirect(query).size();
+    }
+
+    /**
+     * 查询区域出租车Id，直接调用dataLoader查询版本
+     * @param query
+     * @return
+     */
+    public Set<String> getTaxisInRegionDirect(RegionQuery query) {
         Set<String> uniqueTaxiIds = new HashSet<>();
 
         // 获取所有出租车ID
@@ -99,9 +108,8 @@ public class RegionQueryService {
         }
 
         System.out.println("直接查询方法找到区域内出租车: " + uniqueTaxiIds.size() + " 辆");
-        return uniqueTaxiIds.size();
+        return uniqueTaxiIds;
     }
-
 
     // TODO：这个优化实现有问题，暂不使用
 
@@ -148,12 +156,15 @@ public class RegionQueryService {
     }
 
 
-     //TODO: 有BUG 暂不使用
+
     /**
      * 获取区域内所有出租车ID列表
      */
     public Set<String> getTaxisInRegion(RegionQuery query) {
 
+        return getTaxisInRegionDirect(query);
+
+        //TODO: 优化版本有BUG 暂不使用
 //        // 检查索引构建
 //        System.out.println("开始查询，检查日期索引状态：");
 //        LocalDate currentDate = query.getStartTime().toLocalDate();
@@ -163,24 +174,24 @@ public class RegionQueryService {
 //            System.out.println("日期 " + currentDate + " 的索引已构建: " + indexExists);
 //            currentDate = currentDate.plusDays(1);
 //        }
-
-
-        double minLon = query.getMinLongitude();
-        double minLat = query.getMinLatitude();
-        double maxLon = query.getMaxLongitude();
-        double maxLat = query.getMaxLatitude();
-        LocalDateTime startTime = query.getStartTime();
-        LocalDateTime endTime = query.getEndTime();
-
-        // 使用时空索引查询满足条件的GPS点
-        List<GPSPoint> pointsInRegion = spatialIndex.query(
-                minLon, minLat, maxLon, maxLat, startTime, endTime
-        );
-
-        // 收集不同的出租车ID
-        return pointsInRegion.stream()
-                .map(GPSPoint::getTaxiId)
-                .collect(Collectors.toSet());
+//
+//
+//        double minLon = query.getMinLongitude();
+//        double minLat = query.getMinLatitude();
+//        double maxLon = query.getMaxLongitude();
+//        double maxLat = query.getMaxLatitude();
+//        LocalDateTime startTime = query.getStartTime();
+//        LocalDateTime endTime = query.getEndTime();
+//
+//        // 使用时空索引查询满足条件的GPS点
+//        List<GPSPoint> pointsInRegion = spatialIndex.query(
+//                minLon, minLat, maxLon, maxLat, startTime, endTime
+//        );
+//
+//        // 收集不同的出租车ID
+//        return pointsInRegion.stream()
+//                .map(GPSPoint::getTaxiId)
+//                .collect(Collectors.toSet());
     }
 
     /**

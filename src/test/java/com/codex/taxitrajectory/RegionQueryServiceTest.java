@@ -84,14 +84,13 @@ public class RegionQueryServiceTest {
         // 调用服务方法
         int taxiCount = regionQueryService.countTaxisInRegion(query);
 
-        /**
-         * 直接调用Dataloader逻辑耗时：约34s
-         */
 
 
         // 验证结果
         assertTrue(taxiCount > 100, "大区域内应该有大量出租车");
         System.out.println("北京市区一天内出租车数量: " + taxiCount);
+
+        // 直接调用Dataloader逻辑耗时：约34s
     }
 
     /**
@@ -105,17 +104,20 @@ public class RegionQueryServiceTest {
                 39.8,  // minLatitude
                 116.5, // maxLongitude
                 40.0,  // maxLatitude
-                LocalDateTime.parse("2008-02-02 15:30:00", formatter),
-                LocalDateTime.parse("2008-02-02 15:40:00", formatter)
+                LocalDateTime.parse("2008-02-03 11:25:00", formatter),
+                LocalDateTime.parse("2008-02-03 11:35:00", formatter)
         );
 
-//        //TODO:测试获取所有出租车id
-//        Set<String> taxiIds = regionQueryService.countTaxiIsInRegion(query);
-//
-//        // 验证结果
-//        assertNotNull(taxiIds, "出租车ID集合不应为空");
-//        assertFalse(taxiIds.isEmpty(), "出租车ID集合不应为空集合");
-//        assertTrue(taxiIds.contains("1"), "区域内应包含ID为1的出租车");
-//        System.out.println("区域内出租车ID: " + taxiIds);
+        //TODO:测试获取所有出租车id
+        Set<String> taxiIds = regionQueryService.getTaxisInRegion(query);
+
+        // 验证结果
+        assertNotNull(taxiIds, "出租车ID集合不应为空");
+        assertFalse(taxiIds.isEmpty(), "出租车ID集合不应为空集合");
+        assertTrue(taxiIds.contains("1"), "区域内应包含ID为2的出租车"); // 2,2008-02-03 11:30:43,116.47194,39.90773
+        System.out.println("区域内出租车ID: " + taxiIds);
+
+
+        // 直接调用Dataloader逻辑耗时：约32s
     }
 }
