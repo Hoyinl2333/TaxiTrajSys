@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.Random;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -69,6 +70,35 @@ public class DataLoaderTest {
         // 打印获取到的记录数量
         System.out.println("ID为1的出租车轨迹记录数: " + records.size());
         System.out.println("ID为1的第一条出租车轨迹: " + firstRecord.toString());
+    }
+
+    /**
+     * 测试多次根据出租车ID获取轨迹记录
+     */
+    @Test
+    public void testGetRecordsByTaxiIdAsList() {
+        Random random = new Random();
+        int count = 10;
+
+        for (int i = 0; i < count; i++) {
+            String randomTaxiId = String.valueOf(random.nextInt(10000) + 1); // 生成范围1-10000的ID
+            List<TaxiRecord> listRecords = dataLoader.getRecordsByTaxiIdAsList(randomTaxiId);
+
+            System.out.println("Taxi ID: " + randomTaxiId);
+            if (listRecords != null && !listRecords.isEmpty()) {
+                TaxiRecord firstRecord = listRecords.getFirst();
+                System.out.println("记录数量: " + listRecords.size());
+                System.out.println("第一条记录: " + firstRecord.toString());
+
+                // 基础断言
+                assertNotNull(firstRecord.getTaxiId(), "出租车ID不应为null");
+                assertEquals(randomTaxiId, firstRecord.getTaxiId(), "出租车ID应匹配");
+            } else {
+                System.out.println("无记录");
+                fail("出租车ID " + randomTaxiId + " 没有轨迹记录");
+            }
+            System.out.println("=============================");
+        }
     }
 
     /**
