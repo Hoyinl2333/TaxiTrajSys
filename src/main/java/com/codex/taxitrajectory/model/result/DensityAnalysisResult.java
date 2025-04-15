@@ -1,5 +1,6 @@
-package com.codex.taxitrajectory.model;
+package com.codex.taxitrajectory.model.result;
 
+import com.codex.taxitrajectory.model.Grid;
 import lombok.Data;
 
 import java.time.LocalDateTime;

@@ -1,6 +1,7 @@
 package com.codex.taxitrajectory.controller;
 
 import com.codex.taxitrajectory.model.query.RegionQuery;
+import com.codex.taxitrajectory.model.result.RegionQueryResult;
 import com.codex.taxitrajectory.service.RegionQueryService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -23,9 +24,9 @@ public class RegionQueryController {
      * F3: 区域范围查找 - 使用 Query 类作为请求体
      */
     @PostMapping("/count")
-    public int countTaxisInRegion(@RequestBody @Valid RegionQuery query) {
+    public RegionQueryResult getTaxisInRegion(@RequestBody @Valid RegionQuery query) {
         query.validate();
-        return regionQueryService.countTaxisInRegion(query);
+        return regionQueryService.getTaxisInRegion(query);
     }
 
     /**

@@ -50,25 +50,44 @@ public class DataLoaderTest {
     }
 
     /**
-     * 测试根据出租车ID获取轨迹记录的功能
+     * 测试根据出租车ID获取轨迹记录的功能，测试清洗效果（以Id=9757为测试案例)
      */
     @Test
     public void testGetRecordsByTaxiId() {
         // 获取ID为1的出租车轨迹记录
-        NavigableMap<LocalDateTime, TaxiRecord> records = dataLoader.getRecordsByTaxiId("1");
+        NavigableMap<LocalDateTime, TaxiRecord> records1 = dataLoader.getRecordsByTaxiId("1");
+
+        // 获取ID为9757的出租车轨迹记录
+        NavigableMap<LocalDateTime, TaxiRecord> records9757 = dataLoader.getRecordsByTaxiId("9757");
 
         // 验证结果不为空
-        assertNotNull(records, "出租车轨迹记录不应为空");
-        assertFalse(records.isEmpty(), "出租车轨迹记录集合不应为空");
+        assertNotNull(records1, "出租车轨迹记录不应为空");
+        assertFalse(records1.isEmpty(), "出租车轨迹记录集合不应为空");
+
+        assertNotNull(records9757, "出租车轨迹记录不应为空");
+        assertFalse(records9757.isEmpty(), "出租车轨迹记录集合不应为空");
+        assertEquals(records9757.size(),2,"出租车轨迹清洗后应该为空");
+
 
         // 验证第一条记录的准确性（与提供的数据文件对比）
-        TaxiRecord firstRecord = records.firstEntry().getValue();
+        TaxiRecord firstRecord = records1.firstEntry().getValue();
         assertEquals("1", firstRecord.getTaxiId(), "出租车ID应为1");
         assertEquals(116.51172, firstRecord.getLongitude(), 0.00001, "经度值不匹配");
         assertEquals(39.92123, firstRecord.getLatitude(), 0.00001, "纬度值不匹配");
 
         // 打印获取到的记录数量
-        System.out.println("ID为1的出租车轨迹记录数: " + records.size());
+        System.out.println("ID为1的出租车轨迹记录数: " + records1.size());
+        System.out.println("ID为1的第一条出租车轨迹: " + firstRecord.toString());
+
+        // 验证Id=9757记录的准确性
+        firstRecord = records9757.firstEntry().getValue();
+        assertEquals("9757", firstRecord.getTaxiId(), "出租车ID应为9757");
+        assertEquals(116.54252, firstRecord.getLongitude(), 0.00001, "经度值不匹配");
+        assertEquals(39.91612, firstRecord.getLatitude(), 0.00001, "纬度值不匹配");
+
+
+        // 打印获取到的记录数量
+        System.out.println("ID为7的出租车轨迹记录数: " + records9757.size());
         System.out.println("ID为1的第一条出租车轨迹: " + firstRecord.toString());
     }
 

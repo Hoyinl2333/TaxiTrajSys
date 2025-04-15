@@ -1,5 +1,6 @@
 package com.codex.taxitrajectory;
 
+import com.codex.taxitrajectory.model.GPSPoint;
 import com.codex.taxitrajectory.model.query.RegionQuery;
 import com.codex.taxitrajectory.service.RegionQueryService;
 import org.junit.jupiter.api.Test;
@@ -9,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,7 +39,7 @@ public class RegionQueryServiceTest {
         );
 
         // 调用服务方法
-        int taxiCount = regionQueryService.countTaxisInRegion(query);
+        int taxiCount = regionQueryService.getTaxisInRegion(query).getTaxiCount();
 
         // 验证结果
         assertTrue(taxiCount > 0, "区域内应该有出租车");
@@ -60,7 +62,7 @@ public class RegionQueryServiceTest {
         );
 
         // 调用服务方法
-        int taxiCount = regionQueryService.countTaxisInRegion(query);
+        int taxiCount = regionQueryService.getTaxisInRegion(query).getTaxiCount();
 
         // 验证结果
         assertEquals(0, taxiCount, "区域内不应该有出租车");
@@ -82,7 +84,7 @@ public class RegionQueryServiceTest {
         );
 
         // 调用服务方法
-        int taxiCount = regionQueryService.countTaxisInRegion(query);
+        int taxiCount = regionQueryService.getTaxisInRegion(query).getTaxiCount();
 
 
 
@@ -109,7 +111,8 @@ public class RegionQueryServiceTest {
         );
 
         //TODO:测试获取所有出租车id
-        Set<String> taxiIds = regionQueryService.getTaxisInRegion(query);
+        Set<String> taxiIds = regionQueryService.getTaxisInRegion(query)
+                .getGpsPoints().stream().map(GPSPoint::getTaxiId).collect(Collectors.toSet());
 
         // 验证结果
         assertNotNull(taxiIds, "出租车ID集合不应为空");

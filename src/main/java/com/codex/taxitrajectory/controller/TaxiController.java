@@ -28,7 +28,7 @@ public class TaxiController {
     public ResponseEntity<List<TaxiRecord>> getTaxiTrajectory(@PathVariable String id) {
         List<TaxiRecord> records = dataLoader.getRecordsByTaxiIdAsList(id);
         return ResponseEntity.ok(records);
-    }
+}
 
 
 //TODO: f3后端代码已经修改，需要对接好前端

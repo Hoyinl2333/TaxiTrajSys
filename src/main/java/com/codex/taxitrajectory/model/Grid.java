@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Data
 public class Grid {
     private GridCell[][] cells;
-    private double gridSize;  // 网格大小，单位：公里
+    private double gridSize;  // 网格大小，单位：km
     private double minLon, minLat;  // 地图左下角经纬度
     private double maxLon, maxLat;  // 地图右上角经纬度
     private int rows, cols;  // 网格行数和列数
@@ -95,21 +95,16 @@ public class Grid {
     }
 
     /**
-     * 将公里转换为经度差（北京地区约85.3公里/度）
+     * 将km转换为经度差（北京地区约85.3公里/度）
      */
     private double gridSizeInLongitude(double km) {
         return km / 85.3;
     }
 
     /**
-     * 将公里转换为纬度差（约111公里/度）
+     * 将km转换为纬度差（约111公里/度）
      */
     private double gridSizeInLatitude(double km) {
         return km / 111.0;
     }
-
-    // getter方法
-    public int getRows() { return rows; }
-    public int getCols() { return cols; }
-    public double getGridSize() { return gridSize; }
 }

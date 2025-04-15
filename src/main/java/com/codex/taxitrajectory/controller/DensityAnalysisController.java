@@ -1,6 +1,6 @@
 package com.codex.taxitrajectory.controller;
 
-import com.codex.taxitrajectory.model.DensityAnalysisResult;
+import com.codex.taxitrajectory.model.result.DensityAnalysisResult;
 import com.codex.taxitrajectory.model.query.DensityQuery;
 import com.codex.taxitrajectory.service.DensityAnalysisService;
 import jakarta.validation.Valid;

@@ -3,6 +3,7 @@ package com.codex.taxitrajectory.service;
 import com.codex.taxitrajectory.model.GPSPoint;
 import com.codex.taxitrajectory.model.TaxiRecord;
 import com.codex.taxitrajectory.model.query.RegionQuery;
+import com.codex.taxitrajectory.model.result.RegionQueryResult;
 import com.codex.taxitrajectory.repository.DataLoader;
 import com.codex.taxitrajectory.utils.TimePartitionedSpatialIndex;
 import org.springframework.stereotype.Service;
@@ -71,56 +72,72 @@ public class RegionQueryService {
      */
     private int countTaxisInRegionDirect(RegionQuery query) {
         // 调用getTaxisInRegionDirect 实现
-        return getTaxisInRegionDirect(query).size();
+            return getTaxisInRegionDirect(query).getTaxiCount();
     }
 
     /**
-     * 查询区域出租车Id，直接调用dataLoader查询版本
-     * @param query
-     * @return
+     * 查询指定时间和空间区域内的出租车轨迹信息（返回出租车数量和GPS点）
+     * @param query 区域查询参数
+     * @return RegionQueryResult 包含出租车数量与轨迹点集合
      */
-    public Set<String> getTaxisInRegionDirect(RegionQuery query) {
-        Set<String> uniqueTaxiIds = new HashSet<>();
+    private RegionQueryResult getTaxisInRegionDirect(RegionQuery query) {
+        Set<String> uniqueTaxiIds = new HashSet<>(); // 防止有一辆车在相近时刻出现在同一区域内被重复计数
+        Set<GPSPoint> gpsPoints = new HashSet<>();
 
-        // 获取所有出租车ID
         Set<String> allTaxiIds = dataLoader.getAllTaxiIds();
         System.out.println("共找到 " + allTaxiIds.size() + " 个出租车ID");
 
         for (String taxiId : allTaxiIds) {
-            // 获取指定时间范围内的轨迹数据
             List<TaxiRecord> records = dataLoader.getRecordsByTimeRange(
                     taxiId,
                     query.getStartTime(),
                     query.getEndTime()
             );
 
-            // 检查是否有轨迹点落在指定区域内
             for (TaxiRecord record : records) {
-                if (record.getLongitude() >= query.getMinLongitude() &&
-                        record.getLongitude() <= query.getMaxLongitude() &&
-                        record.getLatitude() >= query.getMinLatitude() &&
-                        record.getLatitude() <= query.getMaxLatitude()) {
+                double lon = record.getLongitude();
+                double lat = record.getLatitude();
 
+                if (lon >= query.getMinLongitude() && lon <= query.getMaxLongitude() &&
+                        lat >= query.getMinLatitude() && lat <= query.getMaxLatitude()) {
+
+                    // 第一次会被加入集合
                     uniqueTaxiIds.add(taxiId);
-                    break; // 一旦找到一个点在区域内，就不需要继续检查该出租车
+
+                    // 构造GPS点并加入集合
+                    GPSPoint point = new GPSPoint(lon,lat,record.getTimestamp(),taxiId);
+                    gpsPoints.add(point);
+
+                    // 可以根据需求决定是否 break，比如只要一个点就停止，但这里我们只收集第一个点
+                    break;
                 }
             }
         }
 
-        System.out.println("直接查询方法找到区域内出租车: " + uniqueTaxiIds.size() + " 辆");
-        return uniqueTaxiIds;
+        RegionQueryResult result = new RegionQueryResult();
+        result.setTaxiCount(uniqueTaxiIds.size());
+        result.setGpsPoints(gpsPoints);
+
+        System.out.println("查询完成，区域内出租车数量：" + result.getTaxiCount() +
+                "，匹配轨迹点数量：" + gpsPoints.size());
+
+        return result;
     }
 
-    // TODO：这个优化实现有问题，暂不使用
 
-    /**
-     * 使用Query对象查询区域内的出租车数量
-     */
-    public int countTaxisInRegion(RegionQuery query) {
+/** =========================== 以下是接口 ======================== **/
 
-        return countTaxisInRegionDirect(query);
+// TODO: 暂时弃用这个方法，请使用getTaxisInRegion
 
+//    /**
+//     * 使用Query对象查询区域内的出租车数量
+//     */
+//    public int countTaxisInRegion(RegionQuery query) {
 //
+//        return countTaxisInRegionDirect(query);
+
+//    // TODO：这个优化实现有问题，暂不使用
+
 //        // 检查缓存
 //        if (countCache.containsKey(query)) {
 //            return countCache.get(query);
@@ -153,14 +170,15 @@ public class RegionQueryService {
 //        countCache.put(query, result);
 //
 //        return result;
-    }
-
+//    }
 
 
     /**
-     * 获取区域内所有出租车ID列表
+     * 获取区域内所有出租车信息
+     * @param query
+     * @return
      */
-    public Set<String> getTaxisInRegion(RegionQuery query) {
+    public RegionQueryResult getTaxisInRegion(RegionQuery query) {
 
         return getTaxisInRegionDirect(query);
 

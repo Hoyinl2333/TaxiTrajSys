@@ -2,6 +2,7 @@ package com.codex.taxitrajectory.service;
 
 import com.codex.taxitrajectory.model.*;
 import com.codex.taxitrajectory.model.query.DensityQuery;
+import com.codex.taxitrajectory.model.result.DensityAnalysisResult;
 import com.codex.taxitrajectory.repository.DataLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
