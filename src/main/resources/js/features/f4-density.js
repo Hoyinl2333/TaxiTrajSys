@@ -3,12 +3,12 @@
  * 分析指定区域和时间段内的车流密度
  */
 function analyzeDensity() {
-    var startTime = document.getElementById('densityStartTime').value;
-    var endTime = document.getElementById('densityEndTime').value;
-    var topLeftLng = document.getElementById('densityTopLeftLng').value;
-    var topLeftLat = document.getElementById('densityTopLeftLat').value;
-    var bottomRightLng = document.getElementById('densityBottomRightLng').value;
-    var bottomRightLat = document.getElementById('densityBottomRightLat').value;
+    var startTime = document.getElementById('f4_startTime').value;
+    var endTime = document.getElementById('f4_endTime').value;
+    var topLeftLng = document.getElementById('f4_topLeftLng').value;
+    var topLeftLat = document.getElementById('f4_topLeftLat').value;
+    var bottomRightLng = document.getElementById('f4_bottomRightLng').value;
+    var bottomRightLat = document.getElementById('f4_bottomRightLat').value;
     var gridRadius = document.getElementById('gridRadius').value;
 
     // 验证输入
