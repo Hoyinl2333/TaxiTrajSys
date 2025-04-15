@@ -5,12 +5,16 @@ import com.codex.taxitrajectory.model.query.DensityQuery;
 import com.codex.taxitrajectory.service.DensityAnalysisService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 
 @RestController
-@RequestMapping("/api/density")
+@RequestMapping("/densityAnalysis")
 public class DensityAnalysisController {
 
     private final DensityAnalysisService densityAnalysisService;
@@ -33,8 +37,8 @@ public class DensityAnalysisController {
      * F4: 区域车流密度分析 - 同时支持 URL 参数方式（向后兼容）
      * GET 方法接收 URL 参数
      */
-    @GetMapping("/analyze")
-    public DensityAnalysisResult analyzeTrafficDensity(
+    @GetMapping("/densityAnalysis")
+    public ResponseEntity<DensityAnalysisResult> analyzeTrafficDensity(
             @RequestParam double gridSize,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
@@ -59,6 +63,7 @@ public class DensityAnalysisController {
             query.setMaxLatitude(maxLatitude);
         }
         query.validate();
-        return densityAnalysisService.analyzeTrafficDensity(query);
+
+        return ResponseEntity.ok(densityAnalysisService.analyzeTrafficDensity(query));
     }
 }

@@ -31,26 +31,26 @@ public class RegionQueryController {
     /**
      * F3: 区域范围查找 - 同时支持 URL 参数方式（向后兼容）
      */
-    @GetMapping("/count")
-    public ResponseEntity<Integer> countTaxisInRegion(
-            @RequestParam double lon1,
-            @RequestParam double lat1,
-            @RequestParam double lon2,
-            @RequestParam double lat2,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
-
-        // 创建 RegionQuery 对象，自动计算经纬度区域边界
-        RegionQuery query = new RegionQuery(
-                Math.min(lon1, lon2),
-                Math.min(lat1, lat2),
-                Math.max(lon1, lon2),
-                Math.max(lat1, lat2),
-                startTime,
-                endTime
-        );
-        query.validate();
-        int taxiCount = regionQueryService.countTaxisInRegion(query);
-        return ResponseEntity.ok(taxiCount);
-    }
+//    @GetMapping("/count")
+//    public ResponseEntity<Integer> countTaxisInRegion(
+//            @RequestParam double lon1,
+//            @RequestParam double lat1,
+//            @RequestParam double lon2,
+//            @RequestParam double lat2,
+//            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+//            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+//
+//        // 创建 RegionQuery 对象，自动计算经纬度区域边界
+//        RegionQuery query = new RegionQuery(
+//                Math.min(lon1, lon2),
+//                Math.min(lat1, lat2),
+//                Math.max(lon1, lon2),
+//                Math.max(lat1, lat2),
+//                startTime,
+//                endTime
+//        );
+//        query.validate();
+//        int taxiCount = regionQueryService.countTaxisInRegion(query);
+//        return ResponseEntity.ok(taxiCount);
+//    }
 }
