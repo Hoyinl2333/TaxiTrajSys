@@ -40,4 +40,23 @@ public class GeoUtils {
 
         return R * c;
     }
+
+    /**
+     * 判断一个点是否在矩形区域内
+     * @param longitude 点的经度
+     * @param latitude 点的纬度
+     * @param topLeftLongitude 矩形左上角的经度
+     * @param topLeftLatitude 矩形左上角的纬度
+     * @param bottomRightLongitude 矩形右下角的经度
+     * @param bottomRightLatitude 矩形右下角的纬度
+     * @return 如果点在矩形区域内返回 true，否则返回 false
+     */
+    public static boolean isInRectangle(double longitude, double latitude,
+                                        double topLeftLongitude, double topLeftLatitude,
+                                        double bottomRightLongitude, double bottomRightLatitude) {
+        return longitude >= Math.min(topLeftLongitude, bottomRightLongitude) &&
+                longitude <= Math.max(topLeftLongitude, bottomRightLongitude) &&
+                latitude >= Math.min(topLeftLatitude, bottomRightLatitude) &&
+                latitude <= Math.max(topLeftLatitude, bottomRightLatitude);
+    }
 }
