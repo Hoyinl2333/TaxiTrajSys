@@ -112,7 +112,7 @@ function addBeijingBoundary() {
                 strokeWeight: 2,
                 strokeColor: "#ff0000",
                 fillOpacity: 0.05,
-                fillColor: "#ff0000"
+                fillColor: "#cccccc"
             });
             map.addOverlay(ply);
         }
