@@ -1,208 +1,250 @@
 package com.codex.taxitrajectory.utils;
 
 import com.codex.taxitrajectory.model.GPSPoint;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.index.strtree.STRtree;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * 时空分区索引 - 按天构建空间索引，提高查询性能
- */
 @Component
 public class TimePartitionedSpatialIndex {
+    // 日期分区索引
+    private final Map<LocalDate, RTreeIndex> dailyIndices = new ConcurrentHashMap<>();
+    private final Set<LocalDate> completedDates = ConcurrentHashMap.newKeySet();
 
-    // 按天索引的空间树
-    private final Map<LocalDate, STRtree> timePartitionedIndex = new ConcurrentHashMap<>();
+    // 细粒度的网格索引，用于快速查找热点区域
+    private final Map<String, Set<GPSPoint>> gridCache = new ConcurrentHashMap<>();
 
-    // 索引构建锁（按天）- 防止并发构建同一天的索引
-    private final Map<LocalDate, ReentrantLock> indexBuildLocks = new ConcurrentHashMap<>();
+    // 读写锁，保证线程安全
+    private final ReadWriteLock indexLock = new ReentrantReadWriteLock();
 
-    // 索引完成标记 - 标记哪些天的数据已完成索引
-    private final Map<LocalDate, Boolean> indexCompleted = new ConcurrentHashMap<>();
-
-    // 查询结果缓存 - 缓存热门查询
-    private final Map<QueryCacheKey, List<GPSPoint>> queryResultCache = new ConcurrentHashMap<>();
-    private static final int MAX_CACHE_SIZE = 100; // 缓存大小限制
+    private static final double GRID_SIZE = 0.01; // 约1公里大小的网格
 
     /**
-     * 插入GPS点到时空分区索引
+     * 插入GPS点到索引
      */
     public void insert(GPSPoint point) {
-        LocalDate day = point.getTimestamp().toLocalDate();
+        try {
+            indexLock.writeLock().lock();
 
-        // 获取该天的空间索引，如果不存在则创建
-        STRtree dayIndex = timePartitionedIndex.computeIfAbsent(day, d -> new STRtree());
+            // 添加到R树索引
+            LocalDate date = point.getTimestamp().toLocalDate();
+            RTreeIndex rtree = dailyIndices.computeIfAbsent(date, d -> new RTreeIndex());
+            rtree.insert(point);
 
-        // 创建空间包络并插入到索引
-        Coordinate coord = new Coordinate(point.getLongitude(), point.getLatitude());
-        Envelope envelope = new Envelope(coord);
-        dayIndex.insert(envelope, point);
-    }
-
-    /**
-     * 按需获取或构建指定日期的空间索引
-     */
-    public STRtree getOrBuildIndex(LocalDate day) {
-        // 如果索引已完成构建，直接返回
-        if (Boolean.TRUE.equals(indexCompleted.get(day))) {
-            return timePartitionedIndex.get(day);
-        }
-
-        // 获取该天的构建锁，避免并发构建
-        ReentrantLock lock = indexBuildLocks.computeIfAbsent(day, d -> new ReentrantLock());
-
-        if (lock.tryLock()) {
-            try {
-                // 双重检查，避免锁竞争后重复构建
-                if (Boolean.TRUE.equals(indexCompleted.get(day))) {
-                    return timePartitionedIndex.get(day);
-                }
-
-                // 如果索引不存在，初始化一个
-                STRtree index = timePartitionedIndex.computeIfAbsent(day, d -> new STRtree());
-
-
-                index.build();
-
-                // 标记索引完成
-                indexCompleted.put(day, Boolean.TRUE);
-                return index;
-            } finally {
-                lock.unlock();
-            }
-        } else {
-            // 如果无法获取锁，说明有其他线程正在构建，等待后返回
-            try {
-                Thread.sleep(100); // 短暂等待
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            return getOrBuildIndex(day); // 递归尝试
+            // 添加到网格索引
+            String gridKey = calculateGridKey(point.getLongitude(), point.getLatitude(), date);
+            gridCache.computeIfAbsent(gridKey, k -> ConcurrentHashMap.newKeySet()).add(point);
+        } finally {
+            indexLock.writeLock().unlock();
         }
     }
 
     /**
-     * 区域范围查询 - 先按时间过滤，再做空间查询
+     * 查询指定时空范围内的GPS点，带性能日志
      */
-    @SuppressWarnings("unchecked")
     public List<GPSPoint> query(double minLon, double minLat, double maxLon, double maxLat,
                                 LocalDateTime startTime, LocalDateTime endTime) {
-        // 构建缓存键
-        QueryCacheKey cacheKey = new QueryCacheKey(minLon, minLat, maxLon, maxLat, startTime, endTime);
+        long queryStartTime = System.currentTimeMillis();
+        System.out.println("[性能] 开始时空索引查询: 范围[" +
+                String.format("%.4f,%.4f to %.4f,%.4f", minLon, minLat, maxLon, maxLat) +
+                "], 时间[" + startTime + " to " + endTime + "]");
 
-        // 检查缓存
-        if (queryResultCache.containsKey(cacheKey)) {
-            return queryResultCache.get(cacheKey);
+        try {
+            indexLock.readLock().lock();
+
+            // 尝试使用网格索引进行快速查询
+            List<GPSPoint> results = tryGridIndexQuery(minLon, minLat, maxLon, maxLat, startTime, endTime);
+
+            // 如果网格索引未命中或结果为空，回退到R树查询
+            if (results.isEmpty()) {
+                results = rTreeQuery(minLon, minLat, maxLon, maxLat, startTime, endTime);
+            }
+
+            long queryEndTime = System.currentTimeMillis();
+            System.out.println("[性能] 时空索引查询完成: 找到 " + results.size() +
+                    " 个点, 耗时 " + (queryEndTime - queryStartTime) + " 毫秒");
+
+            return results;
+        } finally {
+            indexLock.readLock().unlock();
         }
+    }
 
+    /**
+     * 使用R树索引进行查询
+     */
+    private List<GPSPoint> rTreeQuery(double minLon, double minLat, double maxLon, double maxLat,
+                                      LocalDateTime startTime, LocalDateTime endTime) {
+        long rtreeStartTime = System.currentTimeMillis();
         List<GPSPoint> results = new ArrayList<>();
 
-        // 确定查询涉及的天数
+        // 按日期查询
         LocalDate currentDate = startTime.toLocalDate();
         LocalDate endDate = endTime.toLocalDate();
 
-        // 创建空间查询范围
-        Envelope queryEnvelope = new Envelope(minLon, maxLon, minLat, maxLat);
+        System.out.println("[性能] R树查询: 日期范围 " + currentDate + " 到 " + endDate);
 
-        // 按天查询
+        // 预估结果大小，减少列表扩容
+        int estimatedCapacity = estimateResultSize(minLon, minLat, maxLon, maxLat,
+                startTime, endTime);
+        List<GPSPoint> allPoints = new ArrayList<>(estimatedCapacity);
+
         while (!currentDate.isAfter(endDate)) {
-            // 检查该天的索引是否存在
-            STRtree dayIndex = getOrBuildIndex(currentDate);
+            RTreeIndex rtree = dailyIndices.get(currentDate);
+            if (rtree != null) {
+                long dateStartTime = System.currentTimeMillis();
+                List<GPSPoint> pointsInDay = rtree.query(minLon, minLat, maxLon, maxLat);
+                allPoints.addAll(pointsInDay);
+                long dateEndTime = System.currentTimeMillis();
 
-            // TODO: 这里查询有BUG
-            if (dayIndex != null) {
-                // 执行空间查询
-                List<Object> dayResults = dayIndex.query(queryEnvelope);
-
-                // 处理查询结果，过滤时间范围
-                for (Object obj : dayResults) {
-                    if (obj instanceof GPSPoint) {
-                        GPSPoint point = (GPSPoint) obj;
-                        LocalDateTime timestamp = point.getTimestamp();
-
-                        // 时间范围过滤
-                        if (!timestamp.isBefore(startTime) && !timestamp.isAfter(endTime)) {
-                            results.add(point);
-                        }
-                    }
-                }
+                System.out.println("[性能] R树查询: 日期 " + currentDate +
+                        " 找到 " + pointsInDay.size() + " 个点, 耗时 " +
+                        (dateEndTime - dateStartTime) + " 毫秒");
+            } else {
+                System.out.println("[性能] R树查询: 日期 " + currentDate + " 无索引数据");
             }
-
-            // 前进到下一天
             currentDate = currentDate.plusDays(1);
         }
 
-        // 缓存查询结果（简单的LRU缓存实现）
-        if (queryResultCache.size() >= MAX_CACHE_SIZE) {
-            // 如果缓存已满，移除一个随机条目（更好的实现应使用真正的LRU策略）
-            queryResultCache.remove(queryResultCache.keySet().iterator().next());
+        // 时间过滤
+        long filterStartTime = System.currentTimeMillis();
+        for (GPSPoint point : allPoints) {
+            LocalDateTime timestamp = point.getTimestamp();
+            if (!timestamp.isBefore(startTime) && !timestamp.isAfter(endTime)) {
+                results.add(point);
+            }
         }
-        queryResultCache.put(cacheKey, results);
+        long filterEndTime = System.currentTimeMillis();
+
+        System.out.println("[性能] R树查询: 时间过滤 " + allPoints.size() +
+                " -> " + results.size() + " 个点, 耗时 " +
+                (filterEndTime - filterStartTime) + " 毫秒");
+
+        long rtreeEndTime = System.currentTimeMillis();
+        System.out.println("[性能] R树查询: 总耗时 " + (rtreeEndTime - rtreeStartTime) + " 毫秒");
 
         return results;
     }
 
     /**
-     * 标记某天的索引已完成
+     * 尝试使用网格索引进行快速查询
      */
-    public void markIndexComplete(LocalDate day) {
-        indexCompleted.put(day, Boolean.TRUE);
+    private List<GPSPoint> tryGridIndexQuery(double minLon, double minLat, double maxLon, double maxLat,
+                                             LocalDateTime startTime, LocalDateTime endTime) {
+        long gridStartTime = System.currentTimeMillis();
+        List<GPSPoint> results = new ArrayList<>();
+
+        // 计算网格范围
+        int minLonGrid = (int)(minLon / GRID_SIZE);
+        int minLatGrid = (int)(minLat / GRID_SIZE);
+        int maxLonGrid = (int)(maxLon / GRID_SIZE);
+        int maxLatGrid = (int)(maxLat / GRID_SIZE);
+
+        // 跨度太大时不使用网格索引
+        if ((maxLonGrid - minLonGrid + 1) * (maxLatGrid - minLatGrid + 1) > 25) {
+            System.out.println("[性能] 网格索引: 区域跨度过大，不使用网格索引");
+            return results;
+        }
+
+        LocalDate currentDate = startTime.toLocalDate();
+        LocalDate endDate = endTime.toLocalDate();
+
+        // 日期跨度太大时不使用网格索引
+        if (currentDate.until(endDate).getDays() > 3) {
+            System.out.println("[性能] 网格索引: 时间跨度过大，不使用网格索引");
+            return results;
+        }
+
+        int gridHits = 0;
+        int totalGrids = 0;
+
+        while (!currentDate.isAfter(endDate)) {
+            for (int lonGrid = minLonGrid; lonGrid <= maxLonGrid; lonGrid++) {
+                for (int latGrid = minLatGrid; latGrid <= maxLatGrid; latGrid++) {
+                    totalGrids++;
+                    String gridKey = lonGrid + "_" + latGrid + "_" + currentDate;
+                    Set<GPSPoint> pointsInGrid = gridCache.get(gridKey);
+
+                    if (pointsInGrid != null) {
+                        gridHits++;
+                        for (GPSPoint point : pointsInGrid) {
+                            // 精确的边界检查
+                            if (point.getLongitude() >= minLon && point.getLongitude() <= maxLon &&
+                                    point.getLatitude() >= minLat && point.getLatitude() <= maxLat) {
+
+                                // 时间过滤
+                                LocalDateTime timestamp = point.getTimestamp();
+                                if (!timestamp.isBefore(startTime) && !timestamp.isAfter(endTime)) {
+                                    results.add(point);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            currentDate = currentDate.plusDays(1);
+        }
+
+        long gridEndTime = System.currentTimeMillis();
+        System.out.println("[性能] 网格索引: 命中 " + gridHits + "/" + totalGrids +
+                " 个网格, 找到 " + results.size() + " 个点, 耗时 " +
+                (gridEndTime - gridStartTime) + " 毫秒");
+
+        return results;
     }
 
     /**
-     * 查询缓存键类
+     * 计算网格键
      */
-    private static class QueryCacheKey {
-        private final double minLon;
-        private final double minLat;
-        private final double maxLon;
-        private final double maxLat;
-        private final LocalDateTime startTime;
-        private final LocalDateTime endTime;
+    private String calculateGridKey(double longitude, double latitude, LocalDate date) {
+        int lonGrid = (int)(longitude / GRID_SIZE);
+        int latGrid = (int)(latitude / GRID_SIZE);
+        return lonGrid + "_" + latGrid + "_" + date;
+    }
 
-        public QueryCacheKey(double minLon, double minLat, double maxLon, double maxLat,
-                             LocalDateTime startTime, LocalDateTime endTime) {
-            this.minLon = minLon;
-            this.minLat = minLat;
-            this.maxLon = maxLon;
-            this.maxLat = maxLat;
-            this.startTime = startTime;
-            this.endTime = endTime;
-        }
+    /**
+     * 估计结果集大小
+     */
+    private int estimateResultSize(double minLon, double minLat, double maxLon, double maxLat,
+                                   LocalDateTime startTime, LocalDateTime endTime) {
+        // 基于区域大小和时间跨度估计
+        double areaSize = (maxLon - minLon) * (maxLat - minLat);
+        int daySpan = startTime.toLocalDate().until(endTime.toLocalDate()).getDays() + 1;
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            QueryCacheKey that = (QueryCacheKey) o;
-            return Double.compare(that.minLon, minLon) == 0 &&
-                    Double.compare(that.minLat, minLat) == 0 &&
-                    Double.compare(that.maxLon, maxLon) == 0 &&
-                    Double.compare(that.maxLat, maxLat) == 0 &&
-                    startTime.equals(that.startTime) &&
-                    endTime.equals(that.endTime);
-        }
+        // 基础估计: 区域越大，时间跨度越长，预期结果越多
+        return Math.max(100, (int)(areaSize * 10000 * daySpan));
+    }
 
-        @Override
-        public int hashCode() {
-            int result = 1;
-            result = 31 * result + Double.hashCode(minLon);
-            result = 31 * result + Double.hashCode(minLat);
-            result = 31 * result + Double.hashCode(maxLon);
-            result = 31 * result + Double.hashCode(maxLat);
-            result = 31 * result + startTime.hashCode();
-            result = 31 * result + endTime.hashCode();
-            return result;
+    /**
+     * 标记日期索引已完成
+     */
+    public void markIndexComplete(LocalDate date) {
+        completedDates.add(date);
+    }
+
+    /**
+     * 检查日期索引是否已构建
+     */
+    public boolean isIndexBuilt(LocalDate date) {
+        return completedDates.contains(date);
+    }
+
+    /**
+     * 清除索引
+     */
+    public void clearIndex() {
+        try {
+            indexLock.writeLock().lock();
+            dailyIndices.clear();
+            gridCache.clear();
+            completedDates.clear();
+        } finally {
+            indexLock.writeLock().unlock();
         }
     }
 }

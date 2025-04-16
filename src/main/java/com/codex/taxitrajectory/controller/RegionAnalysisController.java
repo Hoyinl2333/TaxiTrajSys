@@ -44,7 +44,7 @@ public class RegionAnalysisController {
         );
 
         query.validate();
-        int taxiCount = regionQueryService.countTaxisInRegion(query);
+        int taxiCount = regionQueryService.getTaxisInRegion(query).getTaxiCount();
         return ResponseEntity.ok(taxiCount);
     }
 }

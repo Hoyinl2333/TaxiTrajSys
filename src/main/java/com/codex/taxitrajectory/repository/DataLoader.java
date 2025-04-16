@@ -32,7 +32,7 @@ public class DataLoader {
     // 通过Spring自动注入资源解析器
     private final ResourcePatternResolver resourcePatternResolver;
 
-    // 从配置文件中读取数据路径，默认为classpath:data/*.txt
+    // 从配置文件application.properties 中读取数据路径，默认为classpath:data/*.txt
     @Value("${taxi.data.path:classpath:data/*.txt}")
     private String dataPath;
 
