@@ -1,6 +1,7 @@
 package com.codex.taxitrajectory.utils;
 
 import com.codex.taxitrajectory.model.GPSPoint;
+import lombok.Data;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.index.strtree.STRtree;
@@ -59,6 +60,7 @@ public class RTreeIndex {
     /**
      * GPS点包装类，用于在R-Tree中存储GPS点
      */
+    @Data
     private static class GPSPointWrapper {
         private GPSPoint point;
 
@@ -66,8 +68,7 @@ public class RTreeIndex {
             this.point = point;
         }
 
-        public GPSPoint getPoint() {
-            return point;
-        }
     }
 }
+
+
