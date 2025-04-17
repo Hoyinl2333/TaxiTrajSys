@@ -1,9 +1,8 @@
-package com.codex.taxitrajectory.model;
+package com.codex.taxitrajectory.model.core;
 
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 
 @Data
 public class TaxiRecord {

@@ -1,8 +1,10 @@
 package com.codex.taxitrajectory.utils;
 
-import com.codex.taxitrajectory.model.GPSPoint;
+import com.codex.taxitrajectory.model.core.GPSPoint;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -26,7 +28,7 @@ public class GeoUtils {
      * @param p2 第二个点
      * @return 距离（米）
      */
-    public static double distance(GPSPoint p1, GPSPoint p2) {
+    public static double haversineDistance(GPSPoint p1, GPSPoint p2) {
         double R = 6371e3; // 地球半径（米）
         double lat1 = Math.toRadians(p1.getLatitude());
         double lat2 = Math.toRadians(p2.getLatitude());
@@ -59,4 +61,28 @@ public class GeoUtils {
                 latitude >= Math.min(topLeftLatitude, bottomRightLatitude) &&
                 latitude <= Math.max(topLeftLatitude, bottomRightLatitude);
     }
+
+    /**
+     * 计算两个集合的Jaccard相似度
+     *
+     * Jaccard相似度定义为两个集合交集大小与并集大小的比值，
+     * 适用于衡量两组数据（例如GridCell集合）之间的相似程度。
+     *
+     * @param <T> 集合元素的泛型
+     * @param set1 第一个集合
+     * @param set2 第二个集合
+     * @return Jaccard相似度（取值在0到1之间），值越高表示两个集合越相似
+     */
+    public static <T> double jaccardSimilarity(Set<T> set1, Set<T> set2) {
+        // 如果两个集合均为空，则认为相似度为1
+        if (set1.isEmpty() && set2.isEmpty()) {
+            return 1.0;
+        }
+        Set<T> intersection = new HashSet<>(set1);
+        intersection.retainAll(set2);
+        Set<T> union = new HashSet<>(set1);
+        union.addAll(set2);
+        return union.isEmpty() ? 0.0 : (double) intersection.size() / union.size();
+    }
+//
 }

@@ -1,8 +1,8 @@
-package com.codex.taxitrajectory.model;
+package com.codex.taxitrajectory.model.core;
 
 import lombok.Data;
 
-import java.nio.file.Path;
+import com.codex.taxitrajectory.model.core.Path;
 
 @Data
 public class PathFrequency {

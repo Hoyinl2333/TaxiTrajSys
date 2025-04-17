@@ -1,10 +1,10 @@
 package com.codex.taxitrajectory.service;
 
-import com.codex.taxitrajectory.model.GPSPoint;
-import com.codex.taxitrajectory.model.TaxiRecord;
+import com.codex.taxitrajectory.model.core.GPSPoint;
+import com.codex.taxitrajectory.model.core.TaxiRecord;
 import com.codex.taxitrajectory.model.query.RegionQuery;
 import com.codex.taxitrajectory.model.result.RegionQueryResult;
-import com.codex.taxitrajectory.repository.DataLoader;
+import com.codex.taxitrajectory.repository.TaxiRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,14 +16,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class RegionQueryService {
-    private final DataLoader dataLoader;
+    private final TaxiRepository taxiRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(RegionQueryService.class);
     @Value("${logging.service.enabled:true}")
     private boolean enableLogging; // 注入是否开启log配置，default:true
 
-    public RegionQueryService(DataLoader dataLoader) {
-        this.dataLoader = dataLoader;
+    public RegionQueryService(TaxiRepository taxiRepository) {
+        this.taxiRepository = taxiRepository;
     }
 
     public RegionQueryResult getTaxisInRegion(RegionQuery query) {
@@ -41,9 +41,9 @@ public class RegionQueryService {
         Set<GPSPoint> gpsPoints = ConcurrentHashMap.newKeySet();
 
         // 并行遍历所有出租车ID
-        dataLoader.getAllTaxiIds().parallelStream().forEach(taxiId -> {
+        taxiRepository.getAllTaxiIds().parallelStream().forEach(taxiId -> {
             // 根据时间范围获取该出租车的轨迹数据（已通过 TreeMap 进行排序）
-            List<TaxiRecord> records = dataLoader.getRecordsByTimeRange(taxiId, query.getStartTime(), query.getEndTime());
+            List<TaxiRecord> records = taxiRepository.getRecordsByTimeRange(taxiId, query.getStartTime(), query.getEndTime());
             for (TaxiRecord record : records) {
                 double lon = record.getLongitude();
                 double lat = record.getLatitude();
