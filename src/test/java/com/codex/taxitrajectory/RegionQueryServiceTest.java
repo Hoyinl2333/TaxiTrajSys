@@ -1,6 +1,6 @@
 package com.codex.taxitrajectory;
 
-import com.codex.taxitrajectory.model.GPSPoint;
+import com.codex.taxitrajectory.model.core.GPSPoint;
 import com.codex.taxitrajectory.model.query.RegionQuery;
 import com.codex.taxitrajectory.model.result.RegionQueryResult;
 import com.codex.taxitrajectory.service.RegionQueryService;
@@ -36,7 +36,7 @@ public class RegionQueryServiceTest {
                 116.52, // maxLongitude
                 39.93,  // maxLatitude
                 LocalDateTime.parse("2008-02-02 15:30:00", formatter),
-                LocalDateTime.parse("2008-02-02 15:40:00", formatter)
+                LocalDateTime.parse("2008-02-08 15:40:00", formatter)
         );
 
         // 调用服务方法

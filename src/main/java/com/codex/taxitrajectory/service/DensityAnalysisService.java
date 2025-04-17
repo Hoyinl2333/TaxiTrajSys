@@ -1,9 +1,11 @@
 package com.codex.taxitrajectory.service;
 
-import com.codex.taxitrajectory.model.*;
+import com.codex.taxitrajectory.model.core.Grid;
+import com.codex.taxitrajectory.model.core.GridCell;
+import com.codex.taxitrajectory.model.core.TaxiRecord;
 import com.codex.taxitrajectory.model.query.DensityQuery;
 import com.codex.taxitrajectory.model.result.DensityAnalysisResult;
-import com.codex.taxitrajectory.repository.DataLoader;
+import com.codex.taxitrajectory.repository.TaxiRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,11 +24,11 @@ public class DensityAnalysisService {
     @Value("${logging.service.enabled:true}")
     private boolean enableLogging;
 
-    private final DataLoader dataLoader;
+    private final TaxiRepository taxiRepository;
     private final Map<String, DensityAnalysisResult> resultCache = new ConcurrentHashMap<>();
 
-    public DensityAnalysisService(DataLoader dataLoader) {
-        this.dataLoader = dataLoader;
+    public DensityAnalysisService(TaxiRepository taxiRepository) {
+        this.taxiRepository = taxiRepository;
     }
 
     public DensityAnalysisResult analyzeTrafficDensity(DensityQuery query) {
@@ -60,13 +62,13 @@ public class DensityAnalysisService {
         LocalDateTime endTime = query.getEndTime();
         int timeSlotMinutes = query.getTimeSlotMinutes();
 
-        Set<String> allTaxiIds = dataLoader.getAllTaxiIds();
+        Set<String> allTaxiIds = taxiRepository.getAllTaxiIds();
         AtomicInteger processedCount = new AtomicInteger(0);
         long filterStart = System.currentTimeMillis();
 
         allTaxiIds.parallelStream().forEach(taxiId -> {
             long startNano = System.nanoTime();
-            NavigableMap<LocalDateTime, TaxiRecord> records = dataLoader.getRecordsByTaxiId(taxiId);
+            NavigableMap<LocalDateTime, TaxiRecord> records = taxiRepository.getRecordsByTaxiId(taxiId);
             if (records == null) return;
             NavigableMap<LocalDateTime, TaxiRecord> filtered = records.subMap(startTime, true, endTime, true);
             for (TaxiRecord record : filtered.values()) {
@@ -77,7 +79,7 @@ public class DensityAnalysisService {
             }
             long endNano = System.nanoTime();
             long costMillis = (endNano - startNano) / 1_000_000;
-            if (costMillis > 1000 && enableLogging) {
+            if (costMillis > 5000 && enableLogging) {
                 logger.warn("出租车 {} 数据处理耗时过长：{} ms", taxiId, costMillis);
             }
             int current = processedCount.incrementAndGet();

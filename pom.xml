@@ -105,6 +105,11 @@
 			<scope>compile</scope>
 		</dependency>
 
+		<!-- 添加Caffeine依赖，Java 领域一个高性能、功能丰富的本地缓存库。 -->
+		<dependency>
+    		<groupId>com.github.ben-manes.caffeine</groupId>
+    		<artifactId>caffeine</artifactId>
+		</dependency>
 	</dependencies>
 
 
