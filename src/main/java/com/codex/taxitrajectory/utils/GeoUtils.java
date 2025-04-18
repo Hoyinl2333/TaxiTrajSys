@@ -84,5 +84,30 @@ public class GeoUtils {
         union.addAll(set2);
         return union.isEmpty() ? 0.0 : (double) intersection.size() / union.size();
     }
-//
+
+    /**
+     * 根据地理边界和网格边长计算 row 和 col 数量
+     * @param minLat 最小纬度
+     * @param maxLat 最大纬度
+     * @param minLon 最小经度
+     * @param maxLon 最大经度
+     * @param gridSizeKm 网格边长（单位：km）
+     * @return int[]{rowCount, colCount}
+     */
+    public static int[] calculateGridCount(double minLat, double maxLat, double minLon, double maxLon, double gridSizeKm) {
+        // 平均纬度用于估算经度所代表的距离
+        double avgLat = (minLat + maxLat) / 2.0;
+
+        // 每度纬度对应的千米数（大致常数）
+        double latPerKm = 1.0 / 110.574;
+
+        // 每度经度对应的千米数（取决于纬度）
+        double lonPerKm = 1.0 / (111.320 * Math.cos(Math.toRadians(avgLat)));
+
+        // 纬度差对应的距离 / 单个网格大小
+        int rowCount = (int) Math.ceil((maxLat - minLat) / (latPerKm * gridSizeKm));
+        int colCount = (int) Math.ceil((maxLon - minLon) / (lonPerKm * gridSizeKm));
+
+        return new int[]{rowCount, colCount};
+    }
 }

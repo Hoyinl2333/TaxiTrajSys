@@ -23,10 +23,10 @@ public class DensityQuery {
     private Integer timeSlotMinutes = 60; // 时间分割粒度，默认为60分钟
 
     // 可选参数：区域范围，默认为北京市区范围
-    private Double minLongitude = 116.0;
-    private Double minLatitude = 39.6;
-    private Double maxLongitude = 117.0;
-    private Double maxLatitude = 40.2;
+    private Double minLongitude = 115.25;
+    private Double minLatitude = 39.4;
+    private Double maxLongitude = 117.30;
+    private Double maxLatitude = 41.1;
 
     // 构造函数
     public DensityQuery() {
