@@ -1,8 +1,9 @@
 package com.codex.taxitrajectory.service;
 
-import com.codex.taxitrajectory.model.TaxiRecord;
+import com.codex.taxitrajectory.model.core.TaxiRecord;
 import com.codex.taxitrajectory.model.query.RegionSingleCorrelationQuery;
-import com.codex.taxitrajectory.repository.DataLoader;
+import com.codex.taxitrajectory.repository.TaxiRepository;
+import com.codex.taxitrajectory.repository.TaxiRepository;
 import com.codex.taxitrajectory.utils.GeoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,10 +20,10 @@ public class RegionSingleCorrelationService {
     @Value("${logging.service.enabled:true}")
     private boolean loggingEnabled;
 
-    private final DataLoader dataLoader;
+    private  TaxiRepository taxiRepository;
 
-    public RegionSingleCorrelationService(DataLoader dataLoader) {
-        this.dataLoader = dataLoader;
+    public RegionSingleCorrelationService(TaxiRepository taxiRepository) {
+        this.taxiRepository = taxiRepository;
     }
 
     /**
@@ -84,13 +85,13 @@ public class RegionSingleCorrelationService {
         if (loggingEnabled) {
             logger.debug("分析时间段 {} 至 {} 内的车流量", start, end);
         }
-        Set<String> allTaxiIds = dataLoader.getAllTaxiIds();
+        Set<String> allTaxiIds = taxiRepository.getAllTaxiIds();
         int flowIntoRegion = 0;
         int flowOutOfRegion = 0;
 
         // 遍历所有出租车，统计车流
         for (String taxiId : allTaxiIds) {
-            List<TaxiRecord> records = dataLoader.getRecordsByTimeRange(taxiId, start, end);
+            List<TaxiRecord> records = taxiRepository.getRecordsByTimeRange(taxiId, start, end);
             boolean inRegion = false;
             boolean firstInRegion = false;
 
