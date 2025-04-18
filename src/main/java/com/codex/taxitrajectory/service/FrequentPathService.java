@@ -26,12 +26,12 @@ public class FrequentPathService {
     private final Grid grid; // 持有 Grid 实例
 
     // 定义全局网格参数 (硬编码或从配置注入)
-    // TODO: 根据实际数据范围调整这些值
+    // TODO: 根据实际数据范围调整这些值，实际上应该可以采用北京市区也行
     private static final double GRID_MIN_LON = 115.7;
     private static final double GRID_MIN_LAT = 39.4;
     private static final double GRID_MAX_LON = 117.4;
     private static final double GRID_MAX_LAT = 41.1;
-    private static final double GRID_SIZE_KM = 5; // 网格边长（单位km）
+    private static final double GRID_SIZE_KM = 3; // 网格边长（单位km）
     
     private static final long MIN_TRANSITION_FREQUENCY = 50;
     private static final int MAX_PATH_RECONSTRUCTION_LENGTH = 50;

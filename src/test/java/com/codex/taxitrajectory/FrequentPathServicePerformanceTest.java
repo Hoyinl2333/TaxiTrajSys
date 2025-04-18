@@ -73,7 +73,7 @@ public class FrequentPathServicePerformanceTest {
         logger.info("Total Execution Time: {} ms", durationMillis);
         assertNotNull(result, "Result should not be null");
         assertNotNull(result.getPathFrequencies(), "Path frequencies list should not be null");
-        logger.info("Found {} frequent paths.", result.getPathFrequencies().size());
+        logger.info("Found {} frequent paths.The top one is: {}", result.getPathFrequencies().size(),result.getPathFrequencies().getFirst());
         // 你可以根据需要添加更具体的断言，比如检查返回数量是否 <= k
 
         // 这里可以设置一个大致的性能目标（非常依赖环境，谨慎使用）

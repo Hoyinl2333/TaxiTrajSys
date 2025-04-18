@@ -6,6 +6,7 @@ import com.codex.taxitrajectory.model.core.TaxiRecord;
 import com.codex.taxitrajectory.model.query.DensityQuery;
 import com.codex.taxitrajectory.model.result.DensityAnalysisResult;
 import com.codex.taxitrajectory.repository.TaxiRepository;
+import com.codex.taxitrajectory.utils.GeoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -115,8 +116,15 @@ public class DensityAnalysisService {
             logger.info("当前JVM内存使用：{} MB", usedMemoryMB);
         }
 
+        // 传回结果
         DensityAnalysisResult result = new DensityAnalysisResult();
-        result.setGrid(grid);
+        result.setGridSize(grid.getGridSize());
+        result.setMinLat(grid.getMinLat());
+        result.setMinLon(grid.getMinLon());
+        result.setMaxLat(grid.getMaxLat());
+        result.setMaxLon(grid.getMaxLon());
+        result.setRows(grid.getRows());
+        result.setCols(grid.getCols());
         result.setTimeSlots(timeSlots);
         result.setDensityMap(densityMap);
 

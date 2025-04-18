@@ -20,8 +20,8 @@ public class Grid {
     private final double gridSize;  // 网格大小，单位：km (final)
     private final double minLon, minLat;  // 地图左下角经纬度 (final)
     private final double maxLon, maxLat;  // 地图右上角经纬度 (final)
-    @Getter private final int rows;  // 网格行数 (final) - Added Getter explicitly
-    @Getter private final int cols;  // 网格列数 (final) - Added Getter explicitly
+    private final int rows;  // 网格行数
+    private final int cols;  // 网格列数
 
     // 坐标查找缓存 (final reference)
     private final ConcurrentHashMap<String, GridCell> cellLookupCache = new ConcurrentHashMap<>();
