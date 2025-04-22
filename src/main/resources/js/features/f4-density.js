@@ -36,8 +36,14 @@ function analyzeDensity() {
     var resultDiv = document.getElementById('result');
     resultDiv.innerHTML = '<p>正在分析区域车流密度...</p>';
 
-    // 清除之前的密度分析覆盖物
-    clearDensityOverlays();
+    if (typeof map !== 'undefined' && map !== null) { // 确保地图实例存在
+        clearOverlays(); // 清除 F1, F3, F4 上次的覆盖物
+        clearDensityOverlays(); // 移除图例
+    } else {
+        console.error("Baidu Map instance is not available. Cannot draw on map.");
+        // 即使地图不可用，也可以继续进行API调用，只是无法在地图上绘制
+        // return; // 如果地图是必须的，可以在这里返回
+    }
 
     // 重置全局变量
     gridCells = [];
