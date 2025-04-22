@@ -1,6 +1,7 @@
 package com.codex.taxitrajectory.controller;
 
 import com.codex.taxitrajectory.model.query.RegionQuery;
+import com.codex.taxitrajectory.model.result.RegionQueryResult;
 import com.codex.taxitrajectory.service.RegionQueryService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +26,7 @@ public class RegionAnalysisController {
      * F3: 区域范围查找
      */
     @GetMapping("/count")
-    public ResponseEntity<Integer> countTaxisInRegion(
+    public ResponseEntity<RegionQueryResult> countTaxisInRegion(
             @RequestParam double lon1,
             @RequestParam double lat1,
             @RequestParam double lon2,
@@ -44,7 +45,7 @@ public class RegionAnalysisController {
         );
 
         query.validate();
-        int taxiCount = regionQueryService.getTaxisInRegion(query).getTaxiCount();
-        return ResponseEntity.ok(taxiCount);
+        RegionQueryResult result = regionQueryService.getTaxisInRegion(query);
+        return ResponseEntity.ok(result);
     }
 }
