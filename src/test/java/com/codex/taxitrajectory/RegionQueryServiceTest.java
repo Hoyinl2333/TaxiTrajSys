@@ -1,6 +1,8 @@
 package com.codex.taxitrajectory;
 
+import com.codex.taxitrajectory.model.core.GPSPoint;
 import com.codex.taxitrajectory.model.query.RegionQuery;
+import com.codex.taxitrajectory.model.result.RegionQueryResult;
 import com.codex.taxitrajectory.service.RegionQueryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -33,11 +36,11 @@ public class RegionQueryServiceTest {
                 116.52, // maxLongitude
                 39.93,  // maxLatitude
                 LocalDateTime.parse("2008-02-02 15:30:00", formatter),
-                LocalDateTime.parse("2008-02-02 15:40:00", formatter)
+                LocalDateTime.parse("2008-02-08 15:40:00", formatter)
         );
 
         // 调用服务方法
-        int taxiCount = regionQueryService.countTaxisInRegion(query);
+        int taxiCount = regionQueryService.getTaxisInRegion(query).getTaxiCount();
 
         // 验证结果
         assertTrue(taxiCount > 0, "区域内应该有出租车");
@@ -60,7 +63,7 @@ public class RegionQueryServiceTest {
         );
 
         // 调用服务方法
-        int taxiCount = regionQueryService.countTaxisInRegion(query);
+        int taxiCount = regionQueryService.getTaxisInRegion(query).getTaxiCount();
 
         // 验证结果
         assertEquals(0, taxiCount, "区域内不应该有出租车");
@@ -82,15 +85,48 @@ public class RegionQueryServiceTest {
         );
 
         // 调用服务方法
-        int taxiCount = regionQueryService.countTaxisInRegion(query);
-
+        int taxiCount = regionQueryService.getTaxisInRegion(query).getTaxiCount();
 
 
         // 验证结果
         assertTrue(taxiCount > 100, "大区域内应该有大量出租车");
         System.out.println("北京市区一天内出租车数量: " + taxiCount);
 
-        // 直接调用Dataloader逻辑耗时：约34s
+        // 直接调用未优化方法耗时：约34s
+    }
+
+
+    @Test
+    public void testLargeRegionLongDuration () {
+        // 创建查询条件，范围和时间根据实际需求调整
+        RegionQuery query = new RegionQuery(
+                116.3, 39.8,  // minLongitude, minLatitude
+                116.5, 40.0,  // maxLongitude, maxLatitude
+                LocalDateTime.parse("2008-02-03 11:25:00",formatter),
+                LocalDateTime.parse("2008-02-05 11:25:00",formatter)
+        );
+
+        // 预热阶段：提前调用几次以排除 JVM 预热或缓存加载的影响
+        for (int i = 0; i < 10; i++) {
+            regionQueryService.getTaxisInRegion(query);
+        }
+
+        // 正式测试：执行指定次数，记录总耗时
+        final int iterations = 100;
+        long totalNanoTime = 0;
+        for (int i = 0; i < iterations; i++) {
+            long startNano = System.nanoTime();
+            RegionQueryResult result = regionQueryService.getTaxisInRegion(query);
+            long endNano = System.nanoTime();
+            totalNanoTime += (endNano - startNano);
+        }
+
+        // 计算平均耗时（毫秒）
+        double averageMs = totalNanoTime / (iterations * 1_000_000.0);
+        System.out.println("Average query time over " + iterations + " iterations: " + averageMs + " ms");
+
+        // 可根据实际预期设置响应时间阈值，例如要求在500ms以内
+        assertTrue(averageMs < 500, "Average query time should be under 500ms");
     }
 
     /**
@@ -108,8 +144,9 @@ public class RegionQueryServiceTest {
                 LocalDateTime.parse("2008-02-03 11:35:00", formatter)
         );
 
-        //TODO:测试获取所有出租车id
-        Set<String> taxiIds = regionQueryService.getTaxisInRegion(query);
+        //测试获取所有出租车id
+        Set<String> taxiIds = regionQueryService.getTaxisInRegion(query)
+                .getGpsPoints().stream().map(GPSPoint::getTaxiId).collect(Collectors.toSet());
 
         // 验证结果
         assertNotNull(taxiIds, "出租车ID集合不应为空");
@@ -120,4 +157,5 @@ public class RegionQueryServiceTest {
 
         // 直接调用Dataloader逻辑耗时：约32s
     }
+
 }

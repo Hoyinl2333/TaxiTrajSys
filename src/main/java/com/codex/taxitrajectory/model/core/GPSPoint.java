@@ -1,4 +1,4 @@
-package com.codex.taxitrajectory.model;
+package com.codex.taxitrajectory.model.core;
 
 import lombok.Data;
 

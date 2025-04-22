@@ -21,12 +21,12 @@ function searchTaxisInArea() {
 
     // 构建请求参数
     var params = {
+        lon1: topLeftLng,
+        lat1: topLeftLat,
+        lon2: bottomRightLng,
+        lat2: bottomRightLat,
         startTime: startTime,
-        endTime: endTime,
-        topLeftLongitude: topLeftLng,
-        topLeftLatitude: topLeftLat,
-        bottomRightLongitude: bottomRightLng,
-        bottomRightLatitude: bottomRightLat
+        endTime: endTime
     };
 
     // 构建查询字符串
@@ -35,7 +35,7 @@ function searchTaxisInArea() {
        .join('&');
 
     // 后端 API 的 URL
-    var apiUrl = `http://localhost:8080/taxi/countInRegion?${queryString}`;
+    var apiUrl = `http://localhost:8080/region/count?${queryString}`;
 
     // 发起 API 请求
     fetch(apiUrl)

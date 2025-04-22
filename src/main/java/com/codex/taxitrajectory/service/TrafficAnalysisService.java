@@ -1,19 +1,9 @@
 package com.codex.taxitrajectory.service;
 
 
-import com.codex.taxitrajectory.model.TaxiRecord;
-
-import com.codex.taxitrajectory.model.GridCell;
-import com.codex.taxitrajectory.repository.DataLoader;
-import com.codex.taxitrajectory.utils.GeoUtils;
+import com.codex.taxitrajectory.repository.TaxiRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -29,10 +19,10 @@ import java.util.Map;
 @Component
 public class TrafficAnalysisService {
 
-    private final DataLoader dataLoader;
+    private final TaxiRepository taxiRepository;
 
-    public TrafficAnalysisService(DataLoader dataLoader) {
-        this.dataLoader = dataLoader;
+    public TrafficAnalysisService(TaxiRepository taxiRepository) {
+        this.taxiRepository = taxiRepository;
     }
 
 
