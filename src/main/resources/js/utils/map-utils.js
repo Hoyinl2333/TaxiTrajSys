@@ -3,7 +3,7 @@ var map;
 var overlays = [];
 
 // 自定义覆盖物类
-function CustomOverlay(point, color = 'red'){
+function CustomOverlay(point, color = 'blue'){
     this._point = point;
     this._color = color;
 }
@@ -35,7 +35,9 @@ CustomOverlay.prototype.setSize = function(size){
 
 // 初始化地图
 function initMap() {
-    map = new BMapGL.Map("container");
+    map = new BMapGL.Map("container", {enableAutoResize: false,  // 禁止窗口resize触发重绘
+        trackResize: false        // 禁止跟踪窗口大小变化
+    });
 
     // 修改：设置北京市中心点坐标
     var beijingCenter = new BMapGL.Point(116.404, 39.915); // 北京市中心坐标
@@ -48,41 +50,6 @@ function initMap() {
     map.addControl(new BMapGL.ZoomControl());
     map.addControl(new BMapGL.NavigationControl());
 
-    // 修改：限制地图显示范围为北京市
-    // 使用事件监听来限制地图范围，而不是使用setViewport
-    var beijingSW = new BMapGL.Point(115.7, 39.4);  // 西南角
-    var beijingNE = new BMapGL.Point(117.4, 41.1);  // 东北角
-
-    // 监听地图移动结束事件，确保地图中心不会偏离北京太远
-    map.addEventListener("moveend", function() {
-        var center = map.getCenter();
-        var lng = center.lng;
-        var lat = center.lat;
-
-        // 检查是否超出边界，如果是则调整回来
-        var adjustNeeded = false;
-        if (lng < beijingSW.lng) {
-            lng = beijingSW.lng;
-            adjustNeeded = true;
-        }
-        if (lng > beijingNE.lng) {
-            lng = beijingNE.lng;
-            adjustNeeded = true;
-        }
-        if (lat < beijingSW.lat) {
-            lat = beijingSW.lat;
-            adjustNeeded = true;
-        }
-        if (lat > beijingNE.lat) {
-            lat = beijingNE.lat;
-            adjustNeeded = true;
-        }
-
-        // 如果需要调整，设置新的中心点
-        if (adjustNeeded) {
-            map.panTo(new BMapGL.Point(lng, lat));
-        }
-    });
 
     // 监听地图缩放结束事件，限制缩放级别
     map.addEventListener("zoomend", function() {
