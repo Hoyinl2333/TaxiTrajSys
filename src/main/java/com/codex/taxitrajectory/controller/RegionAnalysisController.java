@@ -1,6 +1,7 @@
 package com.codex.taxitrajectory.controller;
 
 import com.codex.taxitrajectory.model.query.RegionQuery;
+import com.codex.taxitrajectory.model.result.RegionQueryResult;
 import com.codex.taxitrajectory.service.RegionQueryService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +45,7 @@ public class RegionAnalysisController {
         );
 
         query.validate();
-        int taxiCount = regionQueryService.getTaxisInRegion(query).getTaxiCount();
+        RegionQueryResult taxiCount = regionQueryService.getTaxisInRegion(query);
         return ResponseEntity.ok(taxiCount);
     }
 }
