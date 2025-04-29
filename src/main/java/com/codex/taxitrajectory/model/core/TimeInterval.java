@@ -12,7 +12,6 @@ public class TimeInterval {
 
     // 保留构造函数
     public TimeInterval(LocalDateTime startTime, LocalDateTime endTime) {
-        // TODO: 添加时间验证，确保 endTime 在 startTime 之后
         this.startTime = startTime;
         this.endTime = endTime;
     }

@@ -1,21 +1,30 @@
 package com.codex.taxitrajectory.model.result;
 
- // 引入 TimeInterval 内部类
-import com.codex.taxitrajectory.model.core.TimeInterval;
+import com.codex.taxitrajectory.model.core.TaxiRecord;
 import lombok.Data;
 
-import java.util.Map;
+import java.time.Duration;
+import java.util.List;
 
-// F9 通行时间分析的总结果。针对整个 F9 查询（可能包含多个时间段）的全部分析结果的总集合。不同于ShortestPathInfo
+// 每个时间段内的最短通行路径信息。代表的是在一个特定的时间段内，从区域 A 到区域 B 分析得出的最短路径和最短通行时间这一组结果。不直接传输给前端
 @Data // 使用 @Data 注解
 public class TravelTimeResult {
 
-    // 每个时间段对应的最短路径信息
-    private Map<TimeInterval, ShortestPathInfo> results;
+    private List<TaxiRecord> shortestPath; // 最短通行路径的轨迹点列表
+    private Duration minTravelTime; // 最短通行时间
+    private boolean found; // 是否找到从A到B的行程
 
-    // 保留构造函数
-    public TravelTimeResult(Map<TimeInterval, ShortestPathInfo> results) {
-        this.results = results;
+    // 当找到行程时使用
+    public TravelTimeResult(List<TaxiRecord> shortestPath, Duration minTravelTime) {
+        this.shortestPath = shortestPath;
+        this.minTravelTime = minTravelTime;
+        this.found = true;
     }
 
+    // 当没有找到行程时使用
+    public TravelTimeResult() {
+        this.found = false;
+        this.shortestPath = null;
+        this.minTravelTime = null;
+    }
 }
