@@ -10,22 +10,22 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
 public class RegionCorrelationService {
 
     private static final Logger logger = LoggerFactory.getLogger(RegionCorrelationService.class);
 
-    // 从配置文件中读取日志开关，默认开启日志
     @Value("${logging.service.enabled:true}")
     private boolean loggingEnabled;
 
     private final TaxiRepository taxiRepository;
+
+    // 缓存已加载的出租车轨迹数据（出租车 ID -> 时间戳排序的轨迹数据）
+    private final Map<String, NavigableMap<LocalDateTime, TaxiRecord>> taxiDataCache = new ConcurrentHashMap<>();
 
     public RegionCorrelationService(TaxiRepository taxiRepository) {
         this.taxiRepository = taxiRepository;
@@ -40,19 +40,12 @@ public class RegionCorrelationService {
         if (loggingEnabled) {
             logger.info("开始分析两个区域间车流量变化，查询参数：{}", query);
         }
+
         LocalDateTime startTime = query.getStartTime();
         LocalDateTime endTime = query.getEndTime();
         int timeSlotMinutes = query.getTimeSlotMinutes();
-        double topLeftLongitude1 = query.getTopLeftLongitude1();
-        double topLeftLatitude1 = query.getTopLeftLatitude1();
-        double bottomRightLongitude1 = query.getBottomRightLongitude1();
-        double bottomRightLatitude1 = query.getBottomRightLatitude1();
-        double topLeftLongitude2 = query.getTopLeftLongitude2();
-        double topLeftLatitude2 = query.getTopLeftLatitude2();
-        double bottomRightLongitude2 = query.getBottomRightLongitude2();
-        double bottomRightLatitude2 = query.getBottomRightLatitude2();
 
-        Map<LocalDateTime, int[]> flowChangeMap = new TreeMap<>();
+        // 生成时间槽
         long slotGenerationStart = System.currentTimeMillis();
         List<LocalDateTime> timeSlots = generateTimeSlots(startTime, endTime, timeSlotMinutes);
         if (loggingEnabled) {
@@ -60,35 +53,59 @@ public class RegionCorrelationService {
                     timeSlots.size(), System.currentTimeMillis() - slotGenerationStart);
         }
 
-        long analysisStart = System.currentTimeMillis();
-        for (int i = 0; i < timeSlots.size() - 1; i++) {
-            LocalDateTime slotStartTime = timeSlots.get(i);
-            LocalDateTime slotEndTime = timeSlots.get(i + 1);
-
-            int[] flow = analyzeTrafficFlowBetweenRegions(
-                    slotStartTime, slotEndTime,
-                    topLeftLongitude1, topLeftLatitude1,
-                    bottomRightLongitude1, bottomRightLatitude1,
-                    topLeftLongitude2, topLeftLatitude2,
-                    bottomRightLongitude2, bottomRightLatitude2
-            );
-            if (loggingEnabled) {
-                logger.debug("时间槽 {} 至 {} 的车流量：区域1→区域2={}, 区域2→区域1={}",
-                        slotStartTime, slotEndTime, flow[0], flow[1]);
-            }
-            flowChangeMap.put(slotStartTime, flow);
+        // 预加载所有需要的数据到缓存
+        long preloadStart = System.currentTimeMillis();
+        preloadTaxiData(startTime, endTime);
+        if (loggingEnabled) {
+            logger.info("数据预加载完成，耗时：{} ms", System.currentTimeMillis() - preloadStart);
         }
+
+        // 并行处理每个时间槽
+        long analysisStart = System.currentTimeMillis();
+        Map<LocalDateTime, int[]> flowChangeMap = timeSlots.parallelStream()
+                .collect(Collectors.toMap(
+                        slotStartTime -> slotStartTime,
+                        slotStartTime -> analyzeTrafficFlowBetweenRegions(
+                                slotStartTime,
+                                slotStartTime.plusMinutes(timeSlotMinutes),
+                                query.getTopLeftLongitude1(),
+                                query.getTopLeftLatitude1(),
+                                query.getBottomRightLongitude1(),
+                                query.getBottomRightLatitude1(),
+                                query.getTopLeftLongitude2(),
+                                query.getTopLeftLatitude2(),
+                                query.getBottomRightLongitude2(),
+                                query.getBottomRightLatitude2()
+                        )
+                ));
+
         long totalAnalysisTime = System.currentTimeMillis() - analysisStart;
         if (loggingEnabled) {
             logger.info("车流量分析完成，总耗时：{} ms", totalAnalysisTime);
         }
+
         return flowChangeMap;
+    }
+
+    /**
+     * 预加载指定时间范围内的所有出租车数据到缓存
+     */
+    private void preloadTaxiData(LocalDateTime startTime, LocalDateTime endTime) {
+        Set<String> allTaxiIds = taxiRepository.getAllTaxiIds();
+        allTaxiIds.parallelStream().forEach(taxiId -> {
+            if (!taxiDataCache.containsKey(taxiId)) {
+                List<TaxiRecord> records = taxiRepository.getRecordsByTimeRange(taxiId, startTime, endTime);
+                NavigableMap<LocalDateTime, TaxiRecord> sortedMap = new TreeMap<>();
+                records.forEach(record -> sortedMap.put(record.getTimestamp(), record));
+                taxiDataCache.put(taxiId, sortedMap);
+            }
+        });
     }
 
     /**
      * 统计两个指定区域间不同方向的车流量
      */
-    public int[] analyzeTrafficFlowBetweenRegions(
+    private int[] analyzeTrafficFlowBetweenRegions(
             LocalDateTime start, LocalDateTime end,
             double topLeftLongitude1, double topLeftLatitude1,
             double bottomRightLongitude1, double bottomRightLatitude1,
@@ -98,19 +115,21 @@ public class RegionCorrelationService {
         if (loggingEnabled) {
             logger.debug("分析时间段 {} 至 {} 内的车流量", start, end);
         }
-        Set<String> allTaxiIds = taxiRepository.getAllTaxiIds();
+
         int flowFromRegion1ToRegion2 = 0;
         int flowFromRegion2ToRegion1 = 0;
 
         // 遍历所有出租车，统计车流
-        for (String taxiId : allTaxiIds) {
-            List<TaxiRecord> records = taxiRepository.getRecordsByTimeRange(taxiId, start, end);
+        for (Map.Entry<String, NavigableMap<LocalDateTime, TaxiRecord>> entry : taxiDataCache.entrySet()) {
+            NavigableMap<LocalDateTime, TaxiRecord> records = entry.getValue();
+            NavigableMap<LocalDateTime, TaxiRecord> timeRangeRecords = records.subMap(start, true, end, true);
+
             boolean inRegion1 = false;
             boolean inRegion2 = false;
             boolean firstInRegion1 = false;
 
             // 遍历该出租车在时间段内的轨迹记录
-            for (TaxiRecord record : records) {
+            for (TaxiRecord record : timeRangeRecords.values()) {
                 double longitude = record.getLongitude();
                 double latitude = record.getLatitude();
 
@@ -123,14 +142,12 @@ public class RegionCorrelationService {
 
                 if (isInRegion1 && !inRegion1) {
                     inRegion1 = true;
-                    // 如果还没进入区域2，则认为该出租车第一次处于区域1
                     if (!inRegion2) {
                         firstInRegion1 = true;
                     }
                 }
                 if (isInRegion2 && !inRegion2) {
                     inRegion2 = true;
-                    // 如果还没进入区域1，则认为出租车第一次出现区域2
                     if (!inRegion1) {
                         firstInRegion1 = false;
                     }
@@ -141,7 +158,6 @@ public class RegionCorrelationService {
                     } else {
                         flowFromRegion2ToRegion1++;
                     }
-                    // 找到两个区域的记录后，不必继续分析该出租车
                     break;
                 }
             }
