@@ -26,7 +26,7 @@ public class RegionAnalysisController {
      * F3: 区域范围查找
      */
     @GetMapping("/count")
-    public ResponseEntity<Integer> countTaxisInRegion(
+    public ResponseEntity<RegionQueryResult> countTaxisInRegion(
             @RequestParam double lon1,
             @RequestParam double lat1,
             @RequestParam double lon2,
@@ -45,7 +45,7 @@ public class RegionAnalysisController {
         );
 
         query.validate();
-        RegionQueryResult taxiCount = regionQueryService.getTaxisInRegion(query);
-        return ResponseEntity.ok(taxiCount);
+        RegionQueryResult result = regionQueryService.getTaxisInRegion(query);
+        return ResponseEntity.ok(result);
     }
 }
