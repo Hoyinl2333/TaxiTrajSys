@@ -2,7 +2,6 @@ package com.codex.taxitrajectory.controller;
 
 import com.codex.taxitrajectory.model.core.TaxiRecord;
 import com.codex.taxitrajectory.repository.TaxiRepository;
-import com.codex.taxitrajectory.service.TrafficAnalysisService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,11 +12,9 @@ import java.util.List;
 public class TaxiController {
 
     private final TaxiRepository taxiRepository;
-    private final TrafficAnalysisService trafficAnalysisService;
 
-    public TaxiController(TaxiRepository taxiRepository, TrafficAnalysisService trafficAnalysisService) {
+    public TaxiController(TaxiRepository taxiRepository) {
         this.taxiRepository = taxiRepository;
-        this.trafficAnalysisService = trafficAnalysisService;
     }
 
     @GetMapping("/{id}")
