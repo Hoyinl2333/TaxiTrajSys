@@ -77,3 +77,52 @@ button:hover {
     margin-right: 5px;
     min-width: 100px;
 }
+
+/* 功能导航栏样式 */
+.function-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #f5f5f5;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.function-btn {
+    padding: 8px 15px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.function-btn:hover {
+    background-color: #0056b3;
+}
+
+.function-btn.active {
+    background-color: #28a745; /* 激活状态使用绿色 */
+}
+
+/* 表单组样式 */
+.form-group {
+    margin-bottom: 15px;
+    border: 1px solid #eee;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.form-group h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+/* 功能面板容器 */
+#function-panels {
+    margin-bottom: 20px;
+}
