@@ -12,4 +12,9 @@ import java.util.List;
 public class FrequentPathResult {
     // 分析得到的热门路径列表
     private List<PathFrequency> pathFrequencies;
+
+    //构造函数
+    public FrequentPathResult(List<PathFrequency> pathFrequencies) {
+        this.pathFrequencies = pathFrequencies;
+    }
 }

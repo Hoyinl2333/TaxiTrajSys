@@ -15,6 +15,7 @@ public class GPSPoint {
     private String taxiId;     // 出租车ID
 
     // 疑似GPSPoint作用和TaxiRecord作用有点重合
+    // TODO: 取消GPSPoint类，合并至TaxiRecord中
 
 
     public GPSPoint(double longitude, double latitude, LocalDateTime timestamp, String taxiId) {

@@ -50,18 +50,6 @@ public class DensityAnalysisController {
 
         // 创建 DensityQuery 对象
         DensityQuery query = new DensityQuery(gridSize, startTime, endTime, timeSlotMinutes);
-        if (minLongitude != null) {
-            query.setMinLongitude(minLongitude);
-        }
-        if (minLatitude != null) {
-            query.setMinLatitude(minLatitude);
-        }
-        if (maxLongitude != null) {
-            query.setMaxLongitude(maxLongitude);
-        }
-        if (maxLatitude != null) {
-            query.setMaxLatitude(maxLatitude);
-        }
         query.validate();
 
         return ResponseEntity.ok(densityAnalysisService.analyzeTrafficDensity(query));
