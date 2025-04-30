@@ -3,8 +3,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (areaCorrelation1Btn) {
         areaCorrelation1Btn.addEventListener('click', function() {
-            const startTime = document.getElementById('f5_startTime').value;
-            const endTime = document.getElementById('f5_endTime').value;
+            const startTime = new Date(document.getElementById('f5_startTime').value).toISOString();
+            const endTime = new Date(document.getElementById('f5_endTime').value).toISOString();
             const area1TopLeftLng = document.getElementById('f5_area1_topLeftLng').value;
             const area1TopLeftLat = document.getElementById('f5_area1_topLeftLat').value;
             const area1BottomRightLng = document.getElementById('f5_area1_bottomRightLng').value;
@@ -37,10 +37,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         resultDiv.innerHTML = '<p>正在进行区域关联分析...</p>';
 
-        // 构建请求参数
         const params = {
             startTime,
             endTime,
+            timeSlotMinutes: 30,
             topLeftLongitude1: parseFloat(a1TLLng),
             topLeftLatitude1: parseFloat(a1TLLat),
             bottomRightLongitude1: parseFloat(a1BRLng),
@@ -48,13 +48,11 @@ document.addEventListener('DOMContentLoaded', function() {
             topLeftLongitude2: parseFloat(a2TLLng),
             topLeftLatitude2: parseFloat(a2TLLat),
             bottomRightLongitude2: parseFloat(a2BRLng),
-            bottomRightLatitude2: parseFloat(a2BRLat),
+            bottomRightLatitude2: parseFloat(a2BRLat)
         };
 
-        // 后端 API 的 URL
-        const apiUrl = `http://localhost:8080/api/trafficFlowChangeBetweenRegions`;
+        const apiUrl = `http://localhost:8080/Correlation/trafficFlowChangeBetweenRegions`;
 
-        // 发起 POST 请求
         fetch(apiUrl, {
             method: 'POST',
             headers: {
@@ -80,7 +78,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 resultDiv.innerHTML = '<p>未获取到有效的分析结果。</p>';
             }
 
-            // 在地图上绘制两个区域
             if (typeof map !== 'undefined' && map !== null) {
                 drawAreaOnMap(a1TLLng, a1TLLat, a1BRLng, a1BRLat, 'blue');
                 drawAreaOnMap(a2TLLng, a2TLLat, a2BRLng, a2BRLat, 'red');

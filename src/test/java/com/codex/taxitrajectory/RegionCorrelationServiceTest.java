@@ -33,8 +33,8 @@ public class RegionCorrelationServiceTest {
     public void testAnalyzeTrafficFlowChangeBetweenRegions() {
         // 创建区域关联分析查询参数
         RegionCorrelationQuery query = new RegionCorrelationQuery();
-        query.setStartTime(LocalDateTime.parse("2008-02-02 08:00:00", formatter));
-        query.setEndTime(LocalDateTime.parse("2008-02-03 10:00:00", formatter));
+        query.setStartTime(LocalDateTime.parse("2008-02-06 08:00:00", formatter));
+        query.setEndTime(LocalDateTime.parse("2008-02-07 10:00:00", formatter));
         query.setTimeSlotMinutes(30);
 
         // 设置第一个区域的坐标
