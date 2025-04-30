@@ -2,13 +2,16 @@ package com.codex.taxitrajectory.controller;
 
 import com.codex.taxitrajectory.model.query.RegionSingleCorrelationQuery;
 import com.codex.taxitrajectory.service.RegionSingleCorrelationService;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/SingleCorrelation")
 public class RegionSingleCorrelationController {
 
     private final RegionSingleCorrelationService regionSingleCorrelationService;
@@ -17,11 +20,9 @@ public class RegionSingleCorrelationController {
         this.regionSingleCorrelationService = regionSingleCorrelationService;
     }
 
-    /**
-     * 分析指定矩形区域与其他区域的车流量随时间的变化
-     */
     @PostMapping("/trafficFlowChangeWithOtherRegions")
     public Map<LocalDateTime, int[]> analyzeTrafficFlowChangeWithOtherRegions(@RequestBody RegionSingleCorrelationQuery query) {
+        query.setTimeSlotMinutes(30);
         return regionSingleCorrelationService.analyzeTrafficFlowChangeWithOtherRegions(query);
     }
 }

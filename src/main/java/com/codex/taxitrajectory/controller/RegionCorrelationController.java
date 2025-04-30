@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/Correlation")
 public class RegionCorrelationController {
 
     private final RegionCorrelationService regionCorrelationService;
@@ -20,15 +20,9 @@ public class RegionCorrelationController {
         this.regionCorrelationService = regionCorrelationService;
     }
 
-    /**
-     * 分析不同时间段内两个指定区域间的车流量变化
-     */
     @PostMapping("/trafficFlowChangeBetweenRegions")
     public Map<LocalDateTime, int[]> analyzeTrafficFlowChangeBetweenRegions(@RequestBody RegionCorrelationQuery query) {
-        // 设置默认的时间槽分钟数
         query.setTimeSlotMinutes(30);
-
-        // 调用服务层方法进行分析
         return regionCorrelationService.analyzeTrafficFlowChangeBetweenRegions(query);
     }
 }
