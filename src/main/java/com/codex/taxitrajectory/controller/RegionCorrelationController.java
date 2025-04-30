@@ -25,6 +25,10 @@ public class RegionCorrelationController {
      */
     @PostMapping("/trafficFlowChangeBetweenRegions")
     public Map<LocalDateTime, int[]> analyzeTrafficFlowChangeBetweenRegions(@RequestBody RegionCorrelationQuery query) {
+        // 设置默认的时间槽分钟数
+        query.setTimeSlotMinutes(30);
+
+        // 调用服务层方法进行分析
         return regionCorrelationService.analyzeTrafficFlowChangeBetweenRegions(query);
     }
 }
