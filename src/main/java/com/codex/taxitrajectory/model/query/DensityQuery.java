@@ -11,7 +11,7 @@ import lombok.Data;
 @Data
 public class DensityQuery {
     @Positive(message = "网格大小必须为正数")
-    private Double gridSize;  // 网格大小(单位:公里)
+    private Double gridSize;  // 网格大小(单位:km)
 
     @NotNull(message = "开始时间不能为空")
     private LocalDateTime startTime; // 开始时间
@@ -21,12 +21,6 @@ public class DensityQuery {
 
     @Positive(message = "时间间隔必须为正数")
     private Integer timeSlotMinutes = 60; // 时间分割粒度，默认为60分钟
-
-    // 可选参数：区域范围，默认为北京市区范围
-    private Double minLongitude = 115.25;
-    private Double minLatitude = 39.4;
-    private Double maxLongitude = 117.30;
-    private Double maxLatitude = 41.1;
 
     // 构造函数
     public DensityQuery() {
@@ -47,10 +41,6 @@ public class DensityQuery {
     public void validate() {
         if (endTime.isBefore(startTime)) {
             throw new IllegalArgumentException("结束时间不能早于开始时间");
-        }
-
-        if (minLongitude > maxLongitude || minLatitude > maxLatitude) {
-            throw new IllegalArgumentException("区域坐标设置错误");
         }
     }
 }

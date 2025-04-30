@@ -5,6 +5,7 @@ import com.codex.taxitrajectory.model.query.DensityQuery;
 import com.codex.taxitrajectory.service.DensityAnalysisService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
@@ -33,11 +34,7 @@ public class DensityAnalysisServiceTest {
         query.setStartTime(LocalDateTime.parse("2008-02-02 15:00:00", formatter));
         query.setEndTime(LocalDateTime.parse("2008-02-08 15:00:00", formatter));
         query.setTimeSlotMinutes(60*24); // 24小时时间槽
-        // 可选区域参数，默认北京市区范围
-//        query.setMinLongitude(116.0);
-//        query.setMinLatitude(39.6);
-//        query.setMaxLongitude(117.0);
-//        query.setMaxLatitude(40.2);
+
 
         DensityAnalysisResult result = densityAnalysisService.analyzeTrafficDensity(query);
 
@@ -66,9 +63,12 @@ public class DensityAnalysisServiceTest {
         System.out.println("=== 测试结果预览 ===");
         System.out.println("查询时间范围：" + query.getStartTime() + " ~ " + query.getEndTime());
         System.out.println("网格大小：" + query.getGridSize() + " km");
-        System.out.printf("经纬度范围：%.3f ~ %.3f 经度，%.3f ~ %.3f 纬度%n",
-                query.getMinLongitude(), query.getMaxLongitude(),
-                query.getMinLatitude(), query.getMaxLatitude());
+        System.out.printf("经纬度范围：%.3f ~ %.3f 经度，%.3f ~ %.3f 纬度 (来自结果)%n",
+                result.getMinLon(), // 从 result 获取
+                result.getMaxLon(), // 从 result 获取
+                result.getMinLat(), // 从 result 获取
+                result.getMaxLat()  // 从 result 获取
+        );
         System.out.printf("网格行列数：%d x %d，总计：%d 个网格%n",
                 result.getRows(), result.getCols(), totalCells);
 
@@ -94,10 +94,7 @@ public class DensityAnalysisServiceTest {
         query.setStartTime(LocalDateTime.parse("2008-02-02 14:30:00", formatter));
         query.setEndTime(LocalDateTime.parse("2008-02-02 15:30:00", formatter));
         query.setTimeSlotMinutes(30); // 30分钟时间槽
-        query.setMinLongitude(116.0);
-        query.setMinLatitude(39.6);
-        query.setMaxLongitude(117.0);
-        query.setMaxLatitude(40.2);
+
 
         // 执行车流密度分析
         DensityAnalysisResult result = densityAnalysisService.analyzeTrafficDensity(query);
