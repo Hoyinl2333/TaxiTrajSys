@@ -92,5 +92,4 @@ public class GridCell {
         }
         return result;
     }
-    // Getters for centerLon/Lat provided by @Getter or @Data
 }

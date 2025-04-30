@@ -17,9 +17,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class) // 允许控制执行顺序
-public class FrequentPathServicePerformanceTest {
+public class FrequentPathServiceTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(FrequentPathServicePerformanceTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(FrequentPathServiceTest.class);
 
     @Autowired
     private FrequentPathService frequentPathService;
