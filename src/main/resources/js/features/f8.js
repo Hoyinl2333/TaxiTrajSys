@@ -38,18 +38,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const params = {
             k: parseInt(k, 10),
             regionA: {
-                minLongitude: parseFloat(areaATopLeftLng),
-                minLatitude: parseFloat(areaABottomRightLat),
-                maxLongitude: parseFloat(areaABottomRightLng),
-                maxLatitude: parseFloat(areaATopLeftLat)
+                minLat: parseFloat(areaATopLeftLat),
+                maxLat: parseFloat(areaABottomRightLat),
+                minLon: parseFloat(areaATopLeftLng),
+                maxLon: parseFloat(areaABottomRightLng)
             },
             regionB: {
-                minLongitude: parseFloat(areaBTopLeftLng),
-                minLatitude: parseFloat(areaBBottomRightLat),
-                maxLongitude: parseFloat(areaBBottomRightLng),
-                maxLatitude: parseFloat(areaBTopLeftLat)
+                minLat: parseFloat(areaBTopLeftLat),
+                maxLat: parseFloat(areaBBottomRightLat),
+                minLon: parseFloat(areaBTopLeftLng),
+                maxLon: parseFloat(areaBBottomRightLng)
             }
         };
+
+        console.log('发送的请求体:', params); // 调试信息，查看发送的请求体
 
         // 构建请求URL
         const apiUrl = `http://localhost:8080/paths/frequent/regional`;
