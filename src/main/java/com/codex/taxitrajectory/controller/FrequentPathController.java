@@ -47,7 +47,6 @@ public class FrequentPathController {
      * Request Body (JSON):
      * {
      *   "k": 5,
-     *   "minPathDistanceMeters": 1000,
      *   "regionA": { "minLongitude": ..., "minLatitude": ..., ... },
      *   "regionB": { ... }
      * }
@@ -56,6 +55,8 @@ public class FrequentPathController {
     public ResponseEntity<FrequentPathResult> getRegionalFrequentPaths(
             @RequestBody FrequentPathQuery query // 接收包含 k, minDistance, regionA, regionB 的对象
     ) {
+        System.out.println(query.getRegionB());
+        query.setMinPathDistanceMeters(1000);
         // 校验 F8 特定条件
         if (!query.isRegionQuery() || !query.isValid()) {
             // 可以在这里返回更具体的错误信息
