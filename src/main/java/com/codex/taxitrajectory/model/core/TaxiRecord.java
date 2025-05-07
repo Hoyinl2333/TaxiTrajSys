@@ -8,8 +8,8 @@ import java.time.LocalDateTime;
 public class TaxiRecord {
     private String taxiId;
     private LocalDateTime timestamp;
-    private double longitude;
-    private double latitude;
+    private Double longitude;
+    private Double latitude;
 
     public TaxiRecord(String taxiId, LocalDateTime timestamp, double longitude, double latitude) {
         this.taxiId = taxiId;
