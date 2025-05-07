@@ -23,9 +23,9 @@ public class GridCell {
     private final double maxLon;
     private final double maxLat;
 
-    // 中心点坐标 (F8 需要)
-    @Getter private final double centerLon;
-    @Getter private final double centerLat;
+    // 中心点坐标
+    private final double centerLon;
+    private final double centerLat;
 
     /**
      * 构造函数.

@@ -1,6 +1,6 @@
 package com.codex.taxitrajectory;
 
-import com.codex.taxitrajectory.model.core.GPSPoint;
+import com.codex.taxitrajectory.model.core.TaxiRecord;
 import com.codex.taxitrajectory.model.query.RegionQuery;
 import com.codex.taxitrajectory.model.result.RegionQueryResult;
 import com.codex.taxitrajectory.service.RegionQueryService;
@@ -146,7 +146,7 @@ public class RegionQueryServiceTest {
 
         //测试获取所有出租车id
         Set<String> taxiIds = regionQueryService.getTaxisInRegion(query)
-                .getGpsPoints().stream().map(GPSPoint::getTaxiId).collect(Collectors.toSet());
+                .getGpsPoints().stream().map(TaxiRecord::getTaxiId).collect(Collectors.toSet());
 
         // 验证结果
         assertNotNull(taxiIds, "出租车ID集合不应为空");

@@ -1,6 +1,6 @@
 package com.codex.taxitrajectory.service;
 
-import com.codex.taxitrajectory.model.core.GPSPoint;
+
 import com.codex.taxitrajectory.model.core.TaxiRecord;
 import com.codex.taxitrajectory.model.query.RegionQuery;
 import com.codex.taxitrajectory.model.result.RegionQueryResult;
@@ -38,7 +38,7 @@ public class RegionQueryService {
 
         // 创建用于保存查询结果的集合
         Set<String> taxiIds = ConcurrentHashMap.newKeySet(); // 并发安全集合
-        Set<GPSPoint> gpsPoints = ConcurrentHashMap.newKeySet();
+        Set<TaxiRecord> gpsPoints = ConcurrentHashMap.newKeySet();
 
         // 并行遍历所有出租车ID
         taxiRepository.getAllTaxiIds().parallelStream().forEach(taxiId -> {
@@ -50,9 +50,7 @@ public class RegionQueryService {
                 if (lon >= query.getMinLongitude() && lon <= query.getMaxLongitude() &&
                         lat >= query.getMinLatitude() && lat <= query.getMaxLatitude()) {
                     taxiIds.add(taxiId);
-                    // 假设GPSPoint的构造函数为 (lon, lat, timestamp, taxiId)
-                    GPSPoint point = new GPSPoint(lon, lat, record.getTimestamp(), taxiId);
-                    gpsPoints.add(point);
+                    gpsPoints.add(record);
                     break; // 不必再继续遍历当前出租车的后续记录
                 }
             }
