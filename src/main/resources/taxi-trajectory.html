@@ -22,6 +22,8 @@
     <button class="function-btn" data-target="f7">F7: 频繁路径分析1</button>
     <button class="function-btn" data-target="f8">F8: 频繁路径分析2</button>
     <button class="function-btn" data-target="f9">F9: 通信时间分析</button>
+    <!-- 添加清除按钮 -->
+    <button id="clearMapBtn" class="clear-map-btn">清除地图覆盖物</button>
 </div>
 
 <!-- 功能区域容器 -->
@@ -137,8 +139,33 @@
                 <input type="text" id="f5_area2_bottomRightLat" placeholder="纬度">
             </div>
         </div>
+        <div class="form-row">
+            <label>时间跨度：</label>
+            <input type="number" id="f5_timeInterval" placeholder="时间跨度" value="30">
+        </div>
+        <div class="form-row time-selector">
+            <label>时间点选择:</label>
+            <button id="f5_prevTime">&lt; 上一个</button>
+            <input type="text" id="f5_currentTime" readonly style="width: 180px; text-align: center">
+            <button id="f5_nextTime">下一个 &gt;</button>
+        </div>
         <button id="areaCorrelation1Btn">区域关联分析1</button>
         <div id="f5_result"></div>
+        <div id="f5_flow_display" class="flow-display">
+            <div class="flow-info">
+                <h4>当前时间点车流量</h4>
+                <div class="flow-data">
+                    <div class="flow-direction">
+                        <span>区域1 → 区域2:</span>
+                        <span id="flow_1_to_2" class="flow-value">-</span>
+                    </div>
+                    <div class="flow-direction">
+                        <span>区域2 → 区域1:</span>
+                        <span id="flow_2_to_1" class="flow-value">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- F6: 区域关联分析2 -->
@@ -163,8 +190,33 @@
                 <input type="text" id="f6_bottomRightLat" placeholder="纬度">
             </div>
         </div>
+        <div class="form-row">
+            <label>时间跨度：</label>
+            <input type="number" id="f6_timeInterval" placeholder="时间跨度" value="30">
+        </div>
+        <div class="form-row time-selector">
+            <label>时间点选择:</label>
+            <button id="f6_prevTime">&lt; 上一个</button>
+            <input type="text" id="f6_currentTime" readonly style="width: 180px; text-align: center">
+            <button id="f6_nextTime">下一个 &gt;</button>
+        </div>
         <button id="areaCorrelation2Btn">区域关联分析2</button>
         <div id="f6_result"></div>
+        <div id="f6_flow_display" class="flow-display">
+            <div class="flow-info">
+                <h4>当前时间点车流量</h4>
+                <div class="flow-data">
+                    <div class="flow-direction">
+                        <span>进入区域:</span>
+                        <span id="flow_enter" class="flow-value">-</span>
+                    </div>
+                    <div class="flow-direction">
+                        <span>离开区域:</span>
+                        <span id="flow_leave" class="flow-value">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- F7: 频繁路径分析1 -->
@@ -231,12 +283,12 @@
         <div class="form-group">
             <h4>区域A</h4>
             <div class="form-row">
-                <label>左上角坐标:</label>
+                <label>左下角坐标:</label>
                 <input type="text" id="f9_areaA_topLeftLng" placeholder="经度">
                 <input type="text" id="f9_areaA_topLeftLat" placeholder="纬度">
             </div>
             <div class="form-row">
-                <label>右下角坐标:</label>
+                <label>右上角坐标:</label>
                 <input type="text" id="f9_areaA_bottomRightLng" placeholder="经度">
                 <input type="text" id="f9_areaA_bottomRightLat" placeholder="纬度">
             </div>
@@ -244,12 +296,12 @@
         <div class="form-group">
             <h4>区域B</h4>
             <div class="form-row">
-                <label>左上角坐标:</label>
+                <label>左下角坐标:</label>
                 <input type="text" id="f9_areaB_topLeftLng" placeholder="经度">
                 <input type="text" id="f9_areaB_topLeftLat" placeholder="纬度">
             </div>
             <div class="form-row">
-                <label>右下角坐标:</label>
+                <label>右上角坐标:</label>
                 <input type="text" id="f9_areaB_bottomRightLng" placeholder="经度">
                 <input type="text" id="f9_areaB_bottomRightLat" placeholder="纬度">
             </div>
@@ -263,6 +315,8 @@
 <!-- 地图容器 -->
 <div id="container"></div>
 <div id="result"></div>
+
+
 
 <!-- JavaScript -->
 <script>
@@ -294,6 +348,11 @@
                 const targetId = this.getAttribute('data-target');
                 document.getElementById(targetId).style.display = 'block';
             });
+        });
+
+        // 添加清除地图覆盖物按钮事件
+        document.getElementById('clearMapBtn').addEventListener('click', function() {
+            clearOverlays();
         });
     });
 </script>

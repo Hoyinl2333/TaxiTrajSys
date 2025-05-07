@@ -22,7 +22,6 @@ public class RegionCorrelationController {
 
     @PostMapping("/trafficFlowChangeBetweenRegions")
     public Map<LocalDateTime, int[]> analyzeTrafficFlowChangeBetweenRegions(@RequestBody RegionCorrelationQuery query) {
-        query.setTimeSlotMinutes(30);
         return regionCorrelationService.analyzeTrafficFlowChangeBetweenRegions(query);
     }
 }
