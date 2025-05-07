@@ -50,8 +50,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 data.pathFrequencies.forEach((pathFrequency, index) => {
                     resultHtml += `<li>路径 ${index + 1} (频率: ${pathFrequency.frequency})</li>`;
                     resultHtml += '<ul>';
-                    pathFrequency.path.cellIdSequence.forEach(cellId => {
-                        resultHtml += `<li>${cellId}</li>`;
+                    pathFrequency.pathCoordinates.forEach(coordinate => {
+                        resultHtml += `<li>经度: ${coordinate.longitude}, 纬度: ${coordinate.latitude}</li>`;
                     });
                     resultHtml += '</ul>';
                 });
