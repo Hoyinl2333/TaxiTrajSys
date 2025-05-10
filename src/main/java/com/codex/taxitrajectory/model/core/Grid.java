@@ -30,50 +30,19 @@ public class Grid {
      */
     private final GridCell[][] cells;
 
-    /**
-     * 网格大小，单位：公里 (km)。
-     * 指的是期望的网格单元在地面上的边长。
-     */
-    private final double gridSize;
-
-    /**
-     * 网格覆盖范围的最小经度（左边界）。
-     */
+    private final double gridSize; // 单位：千米 (km)
     private final double minLon;
-
-    /**
-     * 网格覆盖范围的最小纬度（下边界）。
-     */
     private final double minLat;
-
-    /**
-     * 网格覆盖范围的最大经度（右边界）。
-     */
     private final double maxLon;
-
-    /**
-     * 网格覆盖范围的最大纬度（上边界）。
-     */
     private final double maxLat;
-
-    /**
-     * 网格的总行数。
-     */
     private final int rows;
-
-    /**
-     * 网格的总列数。
-     */
     private final int cols;
 
-    /**
-     * 坐标到网格单元查找的缓存。
-     * 使用 ConcurrentHashMap 保证线程安全。
-     * 键 (String): "经度:纬度" (格式化，例如 "%.5f:%.5f")
-     * 值 (GridCell): 对应的网格单元
-     */
-    private final ConcurrentHashMap<String, GridCell> cellLookupCache = new ConcurrentHashMap<>();
+    // 新增字段：每个网格单元实际的经纬度步长
+    private final double actualLonStepPerCell;
+    private final double actualLatStepPerCell;
 
+    // TODO: 修改为注入的方式更合理
     // 北京地区近似值：每公里对应的经度变化量（大约值，随纬度变化）
     // 考虑移至 GeoUtils 或作为可配置参数
     private static final double KM_PER_DEGREE_LON_BEIJING = 85.3;
@@ -108,6 +77,7 @@ public class Grid {
         this.maxLon = maxLon;
         this.maxLat = maxLat;
 
+        // TODO:谨慎考虑这个逻辑
         // 计算网格的精确步长（每个网格单元在经纬度上的跨度）
         // 注意：这里假设网格是均匀划分整个区域的，而不是每个网格严格为 gridSize * gridSize
         // 如果需要每个网格严格为 gridSize，则计算 rows/cols 的方式会不同，
@@ -125,7 +95,23 @@ public class Grid {
         logger.info("网格初始化：期望网格大小 {} km，区域 [({}, {}) - ({}, {})]", gridSize, minLon, minLat, maxLon, maxLat);
         logger.info("计算得到的网格维度：{} 行 x {} 列", this.rows, this.cols);
 
-        // 初始化网格单元数组
+        // 初始化 actualLonStepPerCell 和 actualLatStepPerCell
+        // 确保在 this.cols 和 this.rows 被赋值之后进行初始化
+        if (this.cols > 0) {
+            this.actualLonStepPerCell = (this.maxLon - this.minLon) / this.cols;
+        } else {
+            this.actualLonStepPerCell = 0; // 或者抛出异常，cols 应该总是 >= 1
+            logger.warn("网格列数为0，actualLonStepPerCell 设置为0. 这不应该发生。");
+        }
+        if (this.rows > 0) {
+            this.actualLatStepPerCell = (this.maxLat - this.minLat) / this.rows;
+        } else {
+            this.actualLatStepPerCell = 0; // 或者抛出异常，rows 应该总是 >= 1
+            logger.warn("网格行数为0，actualLatStepPerCell 设置为0. 这不应该发生。");
+        }
+        logger.debug("每个网格单元的实际经度步长: {}, 实际纬度步长: {}", this.actualLonStepPerCell, this.actualLatStepPerCell);
+
+
         this.cells = new GridCell[this.rows][this.cols];
         initializeCells();
     }
@@ -135,11 +121,6 @@ public class Grid {
      * 此方法在构造函数中调用。
      */
     private void initializeCells() {
-        // 根据最终确定的行列数，重新计算每个网格单元实际的经纬度步长，以确保完全覆盖定义的范围
-        double actualLonStepPerCell = (this.maxLon - this.minLon) / this.cols;
-        double actualLatStepPerCell = (this.maxLat - this.minLat) / this.rows;
-
-        logger.debug("每个网格单元的实际经度步长: {}, 实际纬度步长: {}", actualLonStepPerCell, actualLatStepPerCell);
 
         for (int r = 0; r < this.rows; r++) {
             double cellMinLat = this.minLat + r * actualLatStepPerCell;
@@ -160,6 +141,7 @@ public class Grid {
 
     /**
      * 根据地理坐标（经度和纬度）获取其所在的网格单元。
+     * (已优化：移除缓存，直接计算)
      * <p>
      * 对于恰好落在网格边界上的点：
      * - 如果点落在两个单元格共享的垂直边界上，它将被分配给右侧（经度较大）的单元格，除非它在整个网格的最右边界。
@@ -184,51 +166,44 @@ public class Grid {
         }
 
 
-        // 2. 使用缓存进行查找
-        // 格式化缓存键，小数点后5位通常对GPS足够
-        String cacheKey = String.format("%.5f:%.5f", lon, lat);
-        GridCell cachedCell = cellLookupCache.get(cacheKey);
-        if (cachedCell != null) {
-            return cachedCell;
-        }
-
-        // 3. 如果缓存未命中，则计算行列索引
-        // 使用每个网格单元的实际平均步长
-        double actualLonStepPerCell = (this.maxLon - this.minLon) / this.cols;
-        double actualLatStepPerCell = (this.maxLat - this.minLat) / this.rows;
-
+        // 2. 直接计算行列索引 (不再使用缓存)
         int colIndex;
-        if (lon == this.maxLon) { // 点恰好在最大经度边界上
-            colIndex = this.cols - 1; // 归入最后一列
+        // 确保 this.actualLonStepPerCell 不为零，尽管在构造时已尝试保证 cols >= 1
+        if (this.actualLonStepPerCell == 0 && this.cols > 0) { // 这是一个异常情况，但做个保护
+            logger.warn("actualLonStepPerCell is zero with cols > 0. This is unexpected.");
+            colIndex = 0; // 或者其他默认/错误处理
+        } else if (lon == this.maxLon) { // 点恰好在最大经度边界上
+            colIndex = this.cols - 1;    // 归入最后一列
         } else {
-            colIndex = (int) ((lon - this.minLon) / actualLonStepPerCell);
+            colIndex = (int) ((lon - this.minLon) / this.actualLonStepPerCell);
         }
 
         int rowIndex;
-        if (lat == this.maxLat) { // 点恰好在最大纬度边界上
-            rowIndex = this.rows - 1; // 归入最后一行
+        // 确保 this.actualLatStepPerCell 不为零
+        if (this.actualLatStepPerCell == 0 && this.rows > 0) {
+            logger.warn("actualLatStepPerCell is zero with rows > 0. This is unexpected.");
+            rowIndex = 0;
+        } else if (lat == this.maxLat) { // 点恰好在最大纬度边界上
+            rowIndex = this.rows - 1;    // 归入最后一行
         } else {
-            rowIndex = (int) ((lat - this.minLat) / actualLatStepPerCell);
+            rowIndex = (int) ((lat - this.minLat) / this.actualLatStepPerCell);
         }
 
-        // 4. 校验计算出的索引是否有效，并从二维数组中获取 GridCell
-        // Math.min 和 Math.max 用于防止因浮点精度问题导致的索引轻微越界
-        // (理论上，如果 lon/lat 在 [min, max] 区间内，这里的计算结果应该在 [0, count-1] 区间内)
+        // 3. 校验计算出的索引是否有效，并从二维数组中获取 GridCell
+        // Math.min 和 Math.max 用于防止因浮点精度问题或极端边界情况导致的索引轻微越界
+        // (理论上，如果 lon/lat 在 [minLon, maxLon] 和 [minLat, maxLat] 区间内（包含边界），
+        // 这里的计算结果应该落在 [0, cols-1] 和 [0, rows-1] 区间内)
         colIndex = Math.max(0, Math.min(colIndex, this.cols - 1));
         rowIndex = Math.max(0, Math.min(rowIndex, this.rows - 1));
 
-        GridCell resultCell = this.cells[rowIndex][colIndex];
+        // 确保 cells 数组不为 null (虽然构造函数会初始化)
+        if (this.cells == null || rowIndex >= this.cells.length || this.cells[rowIndex] == null || colIndex >= this.cells[rowIndex].length) {
+            logger.error("网格单元数组访问异常或未正确初始化。rowIndex={}, colIndex={}, rows={}, cols={}",
+                    rowIndex, colIndex, this.rows, this.cols);
+            return null; // 或者抛出异常
+        }
 
-        // 5. 将结果存入缓存
-        // computeIfAbsent 的方式更原子性，但既然已经计算出来了，可以直接put
-        // 为避免并发问题（虽然此Grid对象构造后是不可变的，但缓存是可变的），
-        // 如果多个线程同时计算同一个未缓存的key，用putIfAbsent更好。
-        // 但由于GridCell对象本身已创建且是共享的，直接put也可以。
-        // 之前您用的 computeIfAbsent 结构更好，这里为了分解步骤写成这样。
-        // 若要改回 computeIfAbsent, 则步骤3和4需要在 lambda 表达式内。
-        cellLookupCache.put(cacheKey, resultCell);
-
-        return resultCell;
+        return this.cells[rowIndex][colIndex];
     }
 
     /**

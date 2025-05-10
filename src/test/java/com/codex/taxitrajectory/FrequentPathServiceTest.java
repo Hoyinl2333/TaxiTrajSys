@@ -9,6 +9,7 @@ import com.codex.taxitrajectory.service.FrequentPathService;
 
 import org.junit.jupiter.api.Disabled; // 保留 @Disabled 注解
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
