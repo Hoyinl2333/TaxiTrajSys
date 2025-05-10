@@ -18,16 +18,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 频繁路径分析服务 (F7 和 F8 功能)。
@@ -146,31 +143,133 @@ public class FrequentPathService {
         return new FrequentPathResult(topPathsWithCoordinates);
     }
 
+//    /**
+//     * 处理单辆出租车的完整轨迹数据。
+//     *
+//     * @param taxiId     出租车ID。
+//     * @param query      当前的查询参数。
+//     * @param grid       地图网格对象。
+//     * @param pathCounts 用于累加路径频率的并发Map。
+//     */
+//    private void processSingleTaxi(String taxiId, FrequentPathQuery query, Grid grid, ConcurrentHashMap<Path, AtomicInteger> pathCounts) {
+//        List<TaxiRecord> trajectory = taxiRepository.getRecordsByTaxiIdAsList(taxiId);
+//
+//        if (trajectory == null || trajectory.size() < 2) {
+//            return;
+//        }
+//        // 方法名从 segmentTrajectoryIntoTrips 调整回 segmentTrajectory
+//        List<List<TaxiRecord>> segments = segmentTrajectory(trajectory, maxTimeGapMinutesBetweenRecords);
+//
+//        int segmentCount = 0;
+//        for (List<TaxiRecord> segmentData : segments) { // 变量名 segment 改为 segmentData 避免与方法名冲突
+//            segmentCount++;
+//            if (segmentData.size() >= 2) {
+//                // 方法名从 processTripSegment 调整回 processSegment
+//                processSegment(segmentData, query, grid, pathCounts, taxiId, segmentCount);
+//            }
+//        }
+//    }
+
     /**
      * 处理单辆出租车的完整轨迹数据。
-     * (方法名从 processSingleTaxiTrajectory 调整回 processSingleTaxi)
+     * 此版本修改为使用 taxiRepository.streamRecordsByTaxiId(taxiId) 进行流式数据加载，然后通过直接迭代轨迹流并动态分割行程段。
      *
      * @param taxiId     出租车ID。
-     * @param query      当前的查询参数。
-     * @param grid       地图网格对象。
-     * @param pathCounts 用于累加路径频率的并发Map。
+     * @param query      当前的查询参数 (FrequentPathQuery)。
+     * @param grid       地图网格对象 (Grid)。
+     * @param pathCounts 用于累加路径频率的并发哈希映射 (ConcurrentHashMap)。
      */
     private void processSingleTaxi(String taxiId, FrequentPathQuery query, Grid grid, ConcurrentHashMap<Path, AtomicInteger> pathCounts) {
-        List<TaxiRecord> trajectory = taxiRepository.getRecordsByTaxiIdAsList(taxiId);
+        int segmentIndex = 0; // 用于 processSegment 的日志或追踪
 
-        if (trajectory == null || trajectory.size() < 2) {
-            return;
-        }
-        // 方法名从 segmentTrajectoryIntoTrips 调整回 segmentTrajectory
-        List<List<TaxiRecord>> segments = segmentTrajectory(trajectory, maxTimeGapMinutesBetweenRecords);
+        // 使用 try-with-resources 语句确保 Stream 在使用完毕后能够正确关闭其底层资源
+        try (Stream<TaxiRecord> trajectoryRecordStream = taxiRepository.streamRecordsByTaxiId(taxiId)) {
 
-        int segmentCount = 0;
-        for (List<TaxiRecord> segmentData : segments) { // 变量名 segment 改为 segmentData 避免与方法名冲突
-            segmentCount++;
-            if (segmentData.size() >= 2) {
-                // 方法名从 processTripSegment 调整回 processSegment
-                processSegment(segmentData, query, grid, pathCounts, taxiId, segmentCount);
+            Iterator<TaxiRecord> recordIterator = trajectoryRecordStream.iterator();
+
+            if (!recordIterator.hasNext()) {
+                // logger.debug("出租车 {} 的轨迹流为空.", taxiId);
+                return; // 没有记录，直接返回
             }
+
+            List<TaxiRecord> currentSegment = new ArrayList<>();
+            TaxiRecord previousRecord = null; // 用于比较时间戳以分割行程
+
+            // 初始化第一个点作为新行程段的开始 (如果迭代器有的话)
+            // 第一个点总是新segment的开始，但要确保它有效
+            TaxiRecord firstRecordInStream = recordIterator.next();
+            if (firstRecordInStream.getTimestamp() != null) { // 检查第一个点的时间戳
+                currentSegment.add(firstRecordInStream);
+                previousRecord = firstRecordInStream;
+            } else {
+                logger.warn("出租车 {} 的轨迹流中首个记录时间戳为空，跳过.", taxiId);
+                // 如果第一个点就无效，我们需要找到下一个有效的点作为起点
+                while (recordIterator.hasNext()) {
+                    firstRecordInStream = recordIterator.next();
+                    if (firstRecordInStream.getTimestamp() != null) {
+                        currentSegment.add(firstRecordInStream);
+                        previousRecord = firstRecordInStream;
+                        break; // 找到了有效的起点
+                    }
+                    logger.warn("出租车 {} 的轨迹流中连续记录时间戳为空，跳过.", taxiId);
+                }
+                if (previousRecord == null) { // 如果整个流都没有有效时间戳的点
+                    // logger.debug("出租车 {} 的轨迹流中所有记录时间戳均为空.", taxiId);
+                    return;
+                }
+            }
+
+
+            while (recordIterator.hasNext()) {
+                TaxiRecord currentRecord = recordIterator.next();
+
+                // 处理时间戳为空的情况 (与您原 segmentTrajectory 逻辑类似)
+                if (currentRecord.getTimestamp() == null) {
+                    logger.warn("出租车 {} 的轨迹流中记录 (在 {} 之后) 时间戳为空，当前行程段可能提前结束.",
+                            taxiId, previousRecord != null ? previousRecord.getTimestamp() : "未知时间点");
+                    // 当前行程段结束（如果满足条件）
+                    if (currentSegment.size() >= 2) {
+                        segmentIndex++;
+                        processSegment(new ArrayList<>(currentSegment), query, grid, pathCounts, taxiId, segmentIndex);
+                    }
+                    currentSegment.clear();
+                    previousRecord = null; // 重置 previousRecord，因为当前点无效，下一个点将是新段的开始（如果有效）
+                    continue;
+                }
+
+                // 如果 previousRecord 因上一个无效点被置为 null，则当前点是新段的开始
+                if (previousRecord == null) {
+                    currentSegment.add(currentRecord);
+                    previousRecord = currentRecord;
+                    continue;
+                }
+
+
+                // 检查时间间隔，进行行程分割
+                Duration timeDifference = Duration.between(previousRecord.getTimestamp(), currentRecord.getTimestamp());
+                if (timeDifference.toMinutes() > maxTimeGapMinutesBetweenRecords) {
+                    // 当前行程段结束
+                    if (currentSegment.size() >= 2) {
+                        segmentIndex++;
+                        // 创建副本传递，因为 currentSegment 会被清空
+                        processSegment(new ArrayList<>(currentSegment), query, grid, pathCounts, taxiId, segmentIndex);
+                    }
+                    currentSegment.clear(); // 为下一个行程段做准备
+                }
+                currentSegment.add(currentRecord);
+                previousRecord = currentRecord;
+            }
+
+            // 处理最后一个行程段 (流结束后的剩余部分)
+            if (currentSegment.size() >= 2) {
+                segmentIndex++;
+                processSegment(new ArrayList<>(currentSegment), query, grid, pathCounts, taxiId, segmentIndex);
+            }
+
+        } catch (IOException e) {
+            logger.error("处理出租车 {} 的轨迹流时发生IO错误: {}", taxiId, e.getMessage(), e);
+        } catch (Exception e) {
+            logger.error("处理出租车 {} 的轨迹流时发生未知错误: {}", taxiId, e.getMessage(), e);
         }
     }
 
