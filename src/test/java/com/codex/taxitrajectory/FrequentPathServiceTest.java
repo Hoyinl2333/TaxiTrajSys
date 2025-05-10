@@ -55,8 +55,8 @@ class FrequentPathServiceTest {
 
         // 1. 定义查询参数
         int k = 10; // 获取 Top 10 频繁路径
-        double minDistanceMeters = 1000; // 路径的最小地理距离为 1000 米 (1公里)
-        FrequentPathQuery query = new FrequentPathQuery(k, minDistanceMeters);
+        double minDistanceKM = 1; // 路径的最小地理距离为 1 千米
+        FrequentPathQuery query = new FrequentPathQuery(k, minDistanceKM);
         logger.info("测试查询参数 (F7 - 全市范围): {}", query);
         logMemoryUsage("F7 分析前"); // 记录分析开始前的内存使用情况
 
@@ -71,7 +71,7 @@ class FrequentPathServiceTest {
             logger.error("!!! F7 性能测试期间发生内存不足错误 (OutOfMemoryError)！请考虑增加 JVM 堆内存 (-Xmx参数) !!!", oom);
             if (stopWatch.isRunning()) stopWatch.stop();
             logMemoryUsage("内存溢出后");
-            throw oom; // 重新抛出错误，使测试失败
+            throw oom; // 重新抛出错误，使测试失败1
         } catch (Exception e) {
             logger.error("!!! F7 性能测试期间发生未预期的异常 !!!", e);
             if (stopWatch.isRunning()) stopWatch.stop();
@@ -139,8 +139,8 @@ class FrequentPathServiceTest {
 
         // 1. 定义查询参数
         int k = 20; // 获取 Top 20 频繁路径
-        double minDistanceMeters = 500; // 路径的最小地理距离为 500 米
-        FrequentPathQuery query = new FrequentPathQuery(k, minDistanceMeters, regionA, regionB);
+        double minDistanceKM = 0.5; // 路径的最小地理距离为 0.5 千米
+        FrequentPathQuery query = new FrequentPathQuery(k, minDistanceKM, regionA, regionB);
         logger.info("测试查询参数 (F8 - 区域 A 到 B): 起始区域 A={}, 目标区域 B={}, {}", regionA, regionB, query);
         logMemoryUsage("F8 分析前");
 

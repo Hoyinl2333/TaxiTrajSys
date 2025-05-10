@@ -8,7 +8,5 @@ public class TaxiTrajectoryApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(TaxiTrajectoryApplication.class, args);
 	}
-
-
 }
 
