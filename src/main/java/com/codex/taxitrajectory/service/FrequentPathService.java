@@ -56,11 +56,11 @@ public class FrequentPathService {
     private double mapMaxLatitude;
 
     /**
-     * 从配置注入的期望网格大小（单位：米）。
-     * 例如：500 表示期望每个网格单元的边长大约为500米。
+     * 从配置注入的期望网格大小（单位：km）。
+     * 例如：0.5 表示期望每个网格单元的边长大约0.5千米。
      */
-    @Value("${map.gridSizeMeters:500}")
-    private double configuredGridSizeMeters;
+    @Value("${map.gridSizeKM:0.5}")
+    private double configuredGridSizeKM;
 
     // --- 轨迹分析配置 ---
     /**
@@ -97,12 +97,12 @@ public class FrequentPathService {
         }
 
         long analysisStartTimeNanos = System.nanoTime();
+        logger.info("=============================");
         logger.info("开始频繁路径分析，查询参数: {}", query);
 
-        double gridSizeKm = configuredGridSizeMeters / 1000.0;
-        Grid grid = new Grid(gridSizeKm, mapMinLongitude, mapMinLatitude, mapMaxLongitude, mapMaxLatitude);
-        logger.info("网格已创建：{} 行 x {} 列，期望单元格大小约 {} 米 (来自配置)",
-                grid.getRows(), grid.getCols(), configuredGridSizeMeters); // 使用 getRowCount() 和 getColumnCount()
+        Grid grid = new Grid(configuredGridSizeKM, mapMinLongitude, mapMinLatitude, mapMaxLongitude, mapMaxLatitude);
+        logger.info("网格已创建：{} 行 x {} 列，期望单元格大小约 {} 千米 (来自配置)",
+                grid.getRows(), grid.getCols(), configuredGridSizeKM); // 使用 getRowCount() 和 getColumnCount()
 
         Set<String> allTaxiIds = taxiRepository.getAllTaxiIds();
         if (allTaxiIds.isEmpty()) {
@@ -267,8 +267,8 @@ public class FrequentPathService {
             return;
         }
         // 方法名从 calculatePathDistanceInMeters 调整回 calculatePathDistance
-        double actualPathDistanceMeters = calculatePathDistance(segmentData);
-        if (actualPathDistanceMeters < query.getMinPathDistanceMeters()) {
+        double actualPathDistanceKM = calculatePathDistance(segmentData);
+        if (actualPathDistanceKM < query.getMinPathDistanceKM()) {
             return;
         }
 
@@ -314,7 +314,7 @@ public class FrequentPathService {
      * (方法名从 calculatePathDistanceInMeters 调整回 calculatePathDistance)
      *
      * @param pathRecords 轨迹段中的 {@link TaxiRecord} 列表。
-     * @return 累计距离（单位：米）。
+     * @return 累计距离（单位：千米）。
      */
     private double calculatePathDistance(List<TaxiRecord> pathRecords) {
         double totalDistance = 0.0;
@@ -327,7 +327,7 @@ public class FrequentPathService {
             if (p1 != null && p2 != null &&
                     p1.getLongitude() != null && p1.getLatitude() != null && // 确保是 Double 类型进行 null 检查
                     p2.getLongitude() != null && p2.getLatitude() != null) {
-                totalDistance += geoUtils.calculateDistance(
+                totalDistance += GeoUtils.calculateDistance(
                         p1.getLatitude(), p1.getLongitude(),
                         p2.getLatitude(), p2.getLongitude()
                 );

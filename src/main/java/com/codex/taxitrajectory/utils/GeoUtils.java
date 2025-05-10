@@ -25,7 +25,7 @@ public class GeoUtils {
      * @param lon1 第一个点的经度 (十进制度数).
      * @param lat2 第二个点的纬度 (十进制度数).
      * @param lon2 第二个点的经度 (十进制度数).
-     * @return 两点之间的距离 (单位: 米).
+     * @return 两点之间的距离 (单位: 千米).
      */
     public static double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
         // 将度数转换为弧度
@@ -45,7 +45,7 @@ public class GeoUtils {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         // 计算距离
-        return EARTH_RADIUS_METERS * c;
+        return EARTH_RADIUS_METERS * c / 1000;
     }
 
     /**

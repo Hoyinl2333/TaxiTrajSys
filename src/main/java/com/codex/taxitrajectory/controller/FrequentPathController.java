@@ -1,7 +1,6 @@
 package com.codex.taxitrajectory.controller;
 
 
-import com.codex.taxitrajectory.model.core.Region;
 import com.codex.taxitrajectory.model.query.FrequentPathQuery;
 import com.codex.taxitrajectory.model.result.FrequentPathResult;
 import com.codex.taxitrajectory.service.FrequentPathService;
@@ -23,15 +22,15 @@ public class FrequentPathController {
 
     /**
      * F7: 获取全市 Top-K 频繁路径
-     * 示例 URL: GET /api/paths/frequent/citywide?k=10&minDistance=1000
-     * (minDistance 单位是米)
+     * 示例 URL: GET /api/paths/frequent/citywide?k=10&minDistance=1
+     * (minDistance 单位是千米)
      */
     @GetMapping("/frequent/citywide")
     public ResponseEntity<FrequentPathResult> getCitywideFrequentPaths(
             @RequestParam(defaultValue = "10") int k,
-            @RequestParam(defaultValue = "1000") double minPathDistanceMeters // 用户输入的距离 x (米)
+            @RequestParam(defaultValue = "1") double minPathDistanceKM // 用户输入的距离 x (km)
     ) {
-        FrequentPathQuery query = new FrequentPathQuery(k, minPathDistanceMeters);
+        FrequentPathQuery query = new FrequentPathQuery(k, minPathDistanceKM);
 
         if (!query.isValid()) { // 基本校验
             return ResponseEntity.badRequest().build();
@@ -56,7 +55,7 @@ public class FrequentPathController {
             @RequestBody FrequentPathQuery query // 接收包含 k, minDistance, regionA, regionB 的对象
     ) {
         System.out.println(query.getRegionB());
-        query.setMinPathDistanceMeters(1000);
+        query.setMinPathDistanceKM(1);
         // 校验 F8 特定条件
         if (!query.isRegionQuery() || !query.isValid()) {
             // 可以在这里返回更具体的错误信息
