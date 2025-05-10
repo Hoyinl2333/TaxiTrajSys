@@ -231,6 +231,22 @@
             <input type="number" id="f7_distance" placeholder="最小路径长度" min="0" step="0.1" value="1.0">
         </div>
         <button id="frequentPath1Btn">分析频繁路径</button>
+
+        <!-- 路径选择器 -->
+        <div class="form-row path-selector-container" style="display: none;" id="pathSelectorContainer">
+            <div class="path-navigation">
+                <button id="prevPathBtn" class="path-nav-btn">&lt; 上一条</button>
+                <select id="path_selector" class="path-selector">
+                    <!-- 选项将通过JavaScript填充 -->
+                </select>
+                <button id="nextPathBtn" class="path-nav-btn">下一条 &gt;</button>
+            </div>
+        </div>
+
+        <!-- 路径详情 -->
+        <div id="path_details" class="path-info" style="display: none;"></div>
+
+        <!-- 结果区域 -->
         <div id="f7_result"></div>
     </div>
 
