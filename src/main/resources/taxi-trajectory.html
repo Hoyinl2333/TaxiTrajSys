@@ -7,6 +7,50 @@
     <link rel="stylesheet" href="css/styles.css">
     <!-- 引入百度地图API -->
     <script type="text/javascript" src="https://api.map.baidu.com/api?v=1.0&&type=webgl&ak=TjH2DBugCdwnk9PDVFl4B0wF0CC0v47N"></script>
+    <style>
+        /* 路径选择器样式 */
+        .path-selector-container {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+
+        .path-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .path-selector {
+            flex-grow: 1;
+            margin: 0 10px;
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        .path-nav-btn {
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .path-nav-btn:hover {
+            background-color: #45a049;
+        }
+
+        .path-info {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e9f7ef;
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
+    </style>
 </head>
 <body>
 <h1>出租车数据分析系统</h1>
@@ -284,6 +328,19 @@
             </div>
         </div>
         <button id="frequentPath2Btn">分析区域间频繁路径</button>
+        <!-- 路径选择器 -->
+        <div class="form-row path-selector-container" style="display: none;" id="f8PathSelectorContainer">
+            <div class="path-navigation">
+                <button id="f8PrevPathBtn" class="path-nav-btn">&lt; 上一条</button>
+                <select id="f8_path_selector" class="path-selector">
+                    <!-- 选项将通过JavaScript填充 -->
+                </select>
+                <button id="f8NextPathBtn" class="path-nav-btn">下一条 &gt;</button>
+            </div>
+        </div>
+
+        <!-- 路径详情 -->
+        <div id="f8_path_details" class="path-info" style="display: none;"></div>
         <div id="f8_result"></div>
     </div>
 

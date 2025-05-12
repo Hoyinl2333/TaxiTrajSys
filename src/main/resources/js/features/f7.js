@@ -93,7 +93,7 @@ function performFrequentPathAnalysis1(k, minDistance) {
     // 构建请求URL
     const apiUrl = new URL(`http://localhost:8080/paths/frequent/citywide`);
     apiUrl.searchParams.append('k', k);
-    apiUrl.searchParams.append('minPathDistanceMeters', minDistance);
+    apiUrl.searchParams.append('minPathDistanceKM', minDistance);
 
     // 发起GET请求
     fetch(apiUrl, {
