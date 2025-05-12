@@ -43,6 +43,7 @@ public class TravelTimeController {
      */
     @PostMapping("/analyze")
     public ResponseEntity<?> analyzeTravelTime(@RequestBody TravelTimeQuery query) {
+        log.info("=============================");
         log.info("收到通行时间分析请求: {}", query);
 
         // 1. 基本的输入检查 (检查区域和时间段是否为 null)
@@ -51,37 +52,19 @@ public class TravelTimeController {
             log.warn("收到的查询参数无效：缺少区域 A、区域 B、开始时间或结束时间。");
             return ResponseEntity.badRequest().body("无效的查询参数：区域 A、区域 B、开始时间和结束时间不能为空。"); // 返回 400 Bad Request
         }
-        // Service 层会进一步验证时间逻辑，例如 startTime <= endTime
 
 
         try {
             // 2. 调用 Service 层执行分析
-            // Service 返回的是一个单一的 TravelTimeResult 对象 (原 ShortestPathInfo)
             TravelTimeResult result = travelTimeService.analyzeShortestTravelTime(query);
 
-            // 3. 处理并返回结果
-            // Service 保证返回一个非 null 的 TravelTimeResult 对象，通过 isFound() 区分是否找到了路径
-            if (result != null) {
-                // 可以在这里根据 result.isFound() 记录更详细的日志
-                if (result.isFound()) {
-                    log.info("通行时间分析成功完成，找到最短路径，耗时 {}。", result.getMinTravelTime());
-                } else {
-                    log.info("通行时间分析完成，未找到符合条件的最短路径。");
-                }
-
-                // 直接返回 TravelTimeResult 对象，让前端根据 isFound() 判断
-                return ResponseEntity.ok(result); // 返回 200 OK 和结果 JSON
-
+            if (result.isFound()) {
+                log.info("通行时间分析成功完成，找到最短路径，耗时 {}。", result.getMinTravelTimeFormatted());
             } else {
-                // 实际上，根据 Service 层的代码，它应该总是返回一个非 null 的 TravelTimeResult 对象
-                // 除非 Service 层发生了更底层的、未捕获的初始化错误。为了健壮性，可以保留这个分支，
-                // 但更合理的做法是 Service 保证返回一个 TravelTimeResult 默认实例 (isFound=false)。
-                log.error("通行时间分析服务意外返回 null。");
-                // 返回一个表示内部错误或未找到结果的响应
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR) // 或 HttpStatus.NOT_FOUND 如果约定 null 表示未找到
-                        .body("分析服务返回异常。");
+                log.info("通行时间分析完成，未找到符合条件的最短路径。");
             }
 
+            return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             // 捕获 Service 层明确抛出的参数错误 (例如：时间范围无效、区域无效等)
             log.error("处理通行时间分析请求时发生参数错误: {}", e.getMessage());
