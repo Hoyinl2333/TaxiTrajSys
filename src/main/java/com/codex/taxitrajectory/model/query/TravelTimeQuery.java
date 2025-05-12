@@ -15,7 +15,7 @@ public class TravelTimeQuery {
     private Region regionB; // 结束区域 B
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    // 保留构造函数
+
     public TravelTimeQuery(Region regionA, Region regionB, LocalDateTime startTime, LocalDateTime endTime) {
         this.regionA = regionA;
         this.regionB = regionB;

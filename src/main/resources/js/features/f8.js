@@ -9,10 +9,6 @@ let f8CurrentPathIndex = 0
 let f8PathPolylines = [] // 存储路径折线对象
 let f8AreaRectangles = [] // 存储区域矩形覆盖物
 
-// 假设 BMapGL, map, convertCoordinates, addDotToMap, clearOverlays 这些变量已经在其他地方定义或引入
-// 例如：
-// import BMapGL from 'bmapgl'; // 如果是模块化的方式
-// 或者在 HTML 中通过 <script> 标签引入百度地图 GL 的 JS 文件
 
 document.addEventListener("DOMContentLoaded", () => {
   const frequentPath2Btn = document.getElementById("frequentPath2Btn")

@@ -128,7 +128,7 @@ class TravelTimeServiceTest {
      */
     @Test
     @Order(2) // 第二个执行
-    @DisplayName("性能测试：短时间跨度查询 (例如2小时)")
+    @DisplayName("性能测试：短时间跨度查询 (2小时)")
     void  testPerformance_ShortSpanQuery() {
         log.info("开始性能测试 - 短时间跨度查询 (从 {} 到 {})", shortSpanStart.format(dtf), shortSpanEnd.format(dtf));
 
@@ -167,7 +167,7 @@ class TravelTimeServiceTest {
      */
     @Test
     @Order(3) // 第三个执行
-    @DisplayName("性能测试：长时间跨度查询 (例如3天)")
+    @DisplayName("性能测试：长时间跨度查询 (3天)")
     void testPerformance_LongSpanQuery() {
         log.info("开始性能测试 - 长时间跨度查询 (从 {} 到 {})", longSpanStart.format(dtf), longSpanEnd.format(dtf));
 
