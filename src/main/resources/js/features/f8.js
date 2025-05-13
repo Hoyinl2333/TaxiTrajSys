@@ -370,20 +370,6 @@ function updateF8PathDetails(pathIndex) {
 
   const pathData = f8PathFrequenciesData[pathIndex]
 
-  let detailsHtml = `<h4>路径 ${pathIndex + 1} 详情 (频率: ${pathData.frequency})</h4>`
-  detailsHtml += '<div class="path-details">'
-
-  pathData.pathCoordinates.forEach((coord, idx) => {
-    detailsHtml += `
-            <div class="path-detail-item">
-                <span class="path-detail-label">点 ${idx + 1}:</span>
-                <span>经度: ${coord.longitude.toFixed(6)}, 纬度: ${coord.latitude.toFixed(6)}</span>
-            </div>
-        `
-  })
-
-  detailsHtml += "</div>"
-  pathDetails.innerHTML = detailsHtml
 }
 
 function clearF8PathPolylines() {
