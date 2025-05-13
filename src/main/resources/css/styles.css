@@ -126,3 +126,86 @@ button:hover {
 #function-panels {
     margin-bottom: 20px;
 }
+
+
+/* F9 功能样式 */
+#f9_result {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+  border-left: 4px solid #28a745;
+}
+
+.result-container {
+  font-family: Arial, sans-serif;
+}
+
+.result-container h4 {
+  color: #28a745;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 8px;
+}
+
+.result-item {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.result-label {
+  font-weight: bold;
+  min-width: 120px;
+  color: #495057;
+}
+
+.result-value {
+  color: #212529;
+  font-size: 1.1em;
+}
+
+.path-details {
+  margin-top: 20px;
+  border-top: 1px dashed #dee2e6;
+  padding-top: 15px;
+}
+
+.path-details h5 {
+  color: #495057;
+  margin-bottom: 10px;
+}
+
+.path-points-container {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+.path-points-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.path-points-table th,
+.path-points-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.path-points-table th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+  position: sticky;
+  top: 0;
+}
+
+.path-points-table tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.path-points-table tr:hover {
+  background-color: #e9ecef;
+}
