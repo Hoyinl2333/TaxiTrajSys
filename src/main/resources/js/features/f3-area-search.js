@@ -118,6 +118,4 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('f3_topLeftLat').value = '40.00';
     document.getElementById('f3_bottomRightLng').value = '116.48';
     document.getElementById('f3_bottomRightLat').value = '39.85';
-    document.getElementById('f3_startTime').value = '2008-02-02T00:00';
-    document.getElementById('f3_endTime').value = '2008-02-03T00:00';
 });
