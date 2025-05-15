@@ -14,7 +14,8 @@ function fetchTaxiTrajectory() {
 
     clearOverlays();
 
-    var url = `http://localhost:8080/taxi/${taxiId}`;
+    const baseURL = window.location.hostname === 'localhost' ? 'http://localhost:8080' : '';
+    var url = `${baseURL}/taxi/${taxiId}`;
     fetch(url)
         .then(response => {
             if (!response.ok) throw new Error('网络响应异常');

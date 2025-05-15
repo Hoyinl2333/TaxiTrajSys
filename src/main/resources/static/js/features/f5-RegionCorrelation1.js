@@ -4,9 +4,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentTimeIndex = 0 // 当前时间点索引
 
     // 获取时间选择器元素
-    const prevTimeBtn = document.getElementById("f6_prevTime")
-    const nextTimeBtn = document.getElementById("f6_nextTime")
-    const currentTimeDisplay = document.getElementById("f6_currentTime")
+    const prevTimeBtn = document.getElementById("f5_prevTime")
+    const nextTimeBtn = document.getElementById("f5_nextTime")
+    const currentTimeDisplay = document.getElementById("f5_currentTime")
 
     // 添加时间选择器按钮事件
     if (prevTimeBtn && nextTimeBtn) {
@@ -47,38 +47,75 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // 更新车流量显示
-        document.getElementById("flow_enter").textContent = flows[0]
-        document.getElementById("flow_leave").textContent = flows[1]
+        document.getElementById("flow_1_to_2").textContent = flows[0]
+        document.getElementById("flow_2_to_1").textContent = flows[1]
 
         // 显示车流量区域
-        document.getElementById("f6_flow_display").style.display = "block"
+        document.getElementById("f5_flow_display").style.display = "block"
     }
 
-    const areaCorrelation2Btn = document.getElementById("areaCorrelation2Btn")
+    const areaCorrelation1Btn = document.getElementById("areaCorrelation1Btn")
 
-    if (areaCorrelation2Btn) {
-        areaCorrelation2Btn.addEventListener("click", () => {
-            const startTime = new Date(document.getElementById("f6_startTime").value).toISOString()
-            const endTime = new Date(document.getElementById("f6_endTime").value).toISOString()
-            const topLeftLng = document.getElementById("f6_topLeftLng").value
-            const topLeftLat = document.getElementById("f6_topLeftLat").value
-            const bottomRightLng = document.getElementById("f6_bottomRightLng").value
-            const bottomRightLat = document.getElementById("f6_bottomRightLat").value
-            const timeSlotMinutes = document.getElementById("f6_timeInterval").value
+    if (areaCorrelation1Btn) {
+        areaCorrelation1Btn.addEventListener("click", () => {
+            const startTime = new Date(document.getElementById("f5_startTime").value).toISOString()
+            const endTime = new Date(document.getElementById("f5_endTime").value).toISOString()
+            const area1TopLeftLng = document.getElementById("f5_area1_topLeftLng").value
+            const area1TopLeftLat = document.getElementById("f5_area1_topLeftLat").value
+            const area1BottomRightLng = document.getElementById("f5_area1_bottomRightLng").value
+            const area1BottomRightLat = document.getElementById("f5_area1_bottomRightLat").value
+            const area2TopLeftLng = document.getElementById("f5_area2_topLeftLng").value
+            const area2TopLeftLat = document.getElementById("f5_area2_topLeftLat").value
+            const area2BottomRightLng = document.getElementById("f5_area2_bottomRightLng").value
+            const area2BottomRightLat = document.getElementById("f5_area2_bottomRightLat").value
+            const timeSlotMinutes = document.getElementById("f5_timeInterval").value
 
-            if (!startTime || !endTime || !topLeftLng || !topLeftLat || !bottomRightLng || !bottomRightLat) {
+            if (
+                !startTime ||
+                !endTime ||
+                !area1TopLeftLng ||
+                !area1TopLeftLat ||
+                !area1BottomRightLng ||
+                !area1BottomRightLat ||
+                !area2TopLeftLng ||
+                !area2TopLeftLat ||
+                !area2BottomRightLng ||
+                !area2BottomRightLat
+            ) {
                 alert("请填写完整的分析条件")
                 return
             }
 
-            performAreaCorrelationAnalysis2(startTime, endTime, topLeftLng, topLeftLat, bottomRightLng, bottomRightLat)
+            performAreaCorrelationAnalysis1(
+                startTime,
+                endTime,
+                area1TopLeftLng,
+                area1TopLeftLat,
+                area1BottomRightLng,
+                area1BottomRightLat,
+                area2TopLeftLng,
+                area2TopLeftLat,
+                area2BottomRightLng,
+                area2BottomRightLat,
+            )
         })
     }
 
-    function performAreaCorrelationAnalysis2(startTime, endTime, topLeftLng, topLeftLat, bottomRightLng, bottomRightLat) {
-        const resultDiv = document.getElementById("f6_result")
+    function performAreaCorrelationAnalysis1(
+        startTime,
+        endTime,
+        a1TLLng,
+        a1TLLat,
+        a1BRLng,
+        a1BRLat,
+        a2TLLng,
+        a2TLLat,
+        a2BRLng,
+        a2BRLat,
+    ) {
+        const resultDiv = document.getElementById("f5_result")
         if (!resultDiv) {
-            console.error("未找到 f6_result 元素")
+            console.error("未找到 f5_result 元素")
             return
         }
         resultDiv.innerHTML = "<p>正在进行区域关联分析...</p>"
@@ -86,14 +123,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const params = {
             startTime,
             endTime,
-            topLeftLongitude: Number.parseFloat(topLeftLng),
-            topLeftLatitude: Number.parseFloat(topLeftLat),
-            bottomRightLongitude: Number.parseFloat(bottomRightLng),
-            bottomRightLatitude: Number.parseFloat(bottomRightLat),
-            timeSlotMinutes: Number.parseInt(document.getElementById("f6_timeInterval").value),
+            timeSlotMinutes: Number.parseInt(document.getElementById("f5_timeInterval").value),
+            topLeftLongitude1: Number.parseFloat(a1TLLng),
+            topLeftLatitude1: Number.parseFloat(a1TLLat),
+            bottomRightLongitude1: Number.parseFloat(a1BRLng),
+            bottomRightLatitude1: Number.parseFloat(a1BRLat),
+            topLeftLongitude2: Number.parseFloat(a2TLLng),
+            topLeftLatitude2: Number.parseFloat(a2TLLat),
+            bottomRightLongitude2: Number.parseFloat(a2BRLng),
+            bottomRightLatitude2: Number.parseFloat(a2BRLat),
         }
-
-        const apiUrl = `http://localhost:8080/SingleCorrelation/trafficFlowChangeWithOtherRegions`
+        const baseURL = window.location.hostname === 'localhost' ? 'http://localhost:8080' : '';
+        const apiUrl = `${baseURL}/Correlation/trafficFlowChangeBetweenRegions`
 
         fetch(apiUrl, {
             method: "POST",
@@ -126,11 +167,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     resultDiv.innerHTML = resultHtml
                 } else {
                     resultDiv.innerHTML = "<p>未获取到有效的分析结果。</p>"
-                    document.getElementById("f6_flow_display").style.display = "none"
+                    document.getElementById("f5_flow_display").style.display = "none"
                 }
 
                 if (typeof map !== "undefined" && map !== null) {
-                    drawAreaOnMap(topLeftLng, topLeftLat, bottomRightLng, bottomRightLat, "blue")
+                    drawAreaOnMap(a1TLLng, a1TLLat, a1BRLng, a1BRLat, "blue")
+                    drawAreaOnMap(a2TLLng, a2TLLat, a2BRLng, a2BRLat, "red")
                 }
             })
             .catch((error) => {
