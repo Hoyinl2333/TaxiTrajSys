@@ -70,7 +70,10 @@ function searchTaxisInArea() {
     var queryString = Object.keys(params)
         .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(params[key]))
         .join('&');
-    var apiUrl = `http://localhost:8080/region/count?${queryString}`; // 后端 API 仍然需要调用以获取数量
+
+    const baseURL = window.location.hostname === 'localhost' ? 'http://localhost:8080' : '';
+
+    var apiUrl = `${baseURL}/region/count?${queryString}`; // 后端 API 仍然需要调用以获取数量
 
     // 5. 发起 API 请求获取数量
     fetch(apiUrl)

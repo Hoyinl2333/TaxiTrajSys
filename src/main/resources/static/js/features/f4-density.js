@@ -69,7 +69,8 @@ function analyzeDensity() {
         .join('&');
 
     // 后端 API 的 URL
-    var apiUrl = `http://localhost:8080/densityAnalysis/densityAnalysis?${queryString}`;
+    const baseURL = window.location.hostname === 'localhost' ? 'http://localhost:8080' : '';
+    var apiUrl = `${baseURL}/densityAnalysis/densityAnalysis?${queryString}`;
 
     // 发起 API 请求
     fetch(apiUrl)
