@@ -54,9 +54,9 @@ public class FrequentPathService {
 
     /**
      * 从配置注入的期望网格大小（单位：km）。
-     * 例如：1.0 表示期望每个网格单元的边长大约1.0千米。
+     * 例如：0.5 表示期望每个网格单元的边长大约0.5千米。
      */
-    @Value("${map.gridSizeKM:1}")
+    @Value("${map.gridSizeKM:0.5}")
     private double configuredGridSizeKM;
 
     // --- 轨迹分析配置 ---
@@ -112,6 +112,7 @@ public class FrequentPathService {
 
         allTaxiIds.parallelStream().forEach(taxiId -> {
             try {
+                // 方法名调整回 processSingleTaxi
                 processSingleTaxi(taxiId, query, grid, pathCounts);
             } catch (Exception e) {
                 logger.error("处理出租车 {} 的轨迹时发生错误: {}", taxiId, e.getMessage(), e);
@@ -119,42 +120,9 @@ public class FrequentPathService {
         });
 
         logger.info("所有出租车轨迹处理完毕。共发现 {} 条不同的路径序列。", pathCounts.size());
-//
-//        List<PathFrequency> topPathsWithCoordinates = pathCounts.entrySet().stream()
-//                .sorted(Map.Entry.<Path, AtomicInteger>comparingByValue(Comparator.comparingInt(AtomicInteger::get)).reversed())
-//                .limit(query.getK())
-//                .map(entry -> {
-//                    Path pathObject = entry.getKey();
-//                    int frequency = entry.getValue().get();
-//                    List<PointCoordinate> coordinates = convertPathToCoordinates(pathObject, grid);
-//                    if (coordinates.isEmpty() && !pathObject.getCellIdSequence().isEmpty()) {
-//                        logger.warn("路径 (ID序列: {}) 无法转换成有效的坐标点序列，但其频率为 {}。可能某些网格单元无效或路径本身为空。",
-//                                pathObject.getCellIdSequence(), frequency);
-//                    }
-//                    return new PathFrequency(coordinates, frequency);
-//                })
-//                .collect(Collectors.toList());
 
-        /* 接下来实现对找到的路径进行排序并输出 */
-
-        // 1. 将 pathCounts.entrySet() 转换为 List 以便排序
-        List<Map.Entry<Path, AtomicInteger>> initialEntries = new ArrayList<>(pathCounts.entrySet());
-
-        // 2. 对列表进行复合排序
-        initialEntries.sort(Comparator
-                // 1. 按频率降序
-                .<Map.Entry<Path, AtomicInteger>, Integer>comparing(entry -> entry.getValue().get(), Comparator.reverseOrder())
-                // 2. 按不同网格单元数（即 pathCoordinates.size() 或 pathKey.getCellIdSequence().size()）升序
-                .thenComparingInt(entry -> {
-                    Path pathKey = entry.getKey();
-                    return (pathKey != null && pathKey.getCellIdSequence() != null) ? pathKey.getCellIdSequence().size() : 0;
-                })
-                // 3. 按 Path 对象的哈希码排序（升序）
-                .thenComparingInt(entry -> entry.getKey().hashCode())
-        );
-
-        // 3. 取 Top-K 并转换为最终的 PathFrequency
-        List<PathFrequency> topPathsWithCoordinates = initialEntries.stream()
+        List<PathFrequency> topPathsWithCoordinates = pathCounts.entrySet().stream()
+                .sorted(Map.Entry.<Path, AtomicInteger>comparingByValue(Comparator.comparingInt(AtomicInteger::get)).reversed())
                 .limit(query.getK())
                 .map(entry -> {
                     Path pathObject = entry.getKey();
@@ -168,13 +136,39 @@ public class FrequentPathService {
                 })
                 .collect(Collectors.toList());
 
-
         long analysisEndTimeNanos = System.nanoTime();
         long durationMillis = (analysisEndTimeNanos - analysisStartTimeNanos) / 1_000_000;
         logger.info("频繁路径分析完成，耗时 {} 毫秒。找到 Top {} 条路径 (已转换为坐标序列)。", durationMillis, topPathsWithCoordinates.size());
-        logger.info("=============================");
+
         return new FrequentPathResult(topPathsWithCoordinates);
     }
+
+//    /**
+//     * 处理单辆出租车的完整轨迹数据。
+//     *
+//     * @param taxiId     出租车ID。
+//     * @param query      当前的查询参数。
+//     * @param grid       地图网格对象。
+//     * @param pathCounts 用于累加路径频率的并发Map。
+//     */
+//    private void processSingleTaxi(String taxiId, FrequentPathQuery query, Grid grid, ConcurrentHashMap<Path, AtomicInteger> pathCounts) {
+//        List<TaxiRecord> trajectory = taxiRepository.getRecordsByTaxiIdAsList(taxiId);
+//
+//        if (trajectory == null || trajectory.size() < 2) {
+//            return;
+//        }
+//        // 方法名从 segmentTrajectoryIntoTrips 调整回 segmentTrajectory
+//        List<List<TaxiRecord>> segments = segmentTrajectory(trajectory, maxTimeGapMinutesBetweenRecords);
+//
+//        int segmentCount = 0;
+//        for (List<TaxiRecord> segmentData : segments) { // 变量名 segment 改为 segmentData 避免与方法名冲突
+//            segmentCount++;
+//            if (segmentData.size() >= 2) {
+//                // 方法名从 processTripSegment 调整回 processSegment
+//                processSegment(segmentData, query, grid, pathCounts, taxiId, segmentCount);
+//            }
+//        }
+//    }
 
     /**
      * 处理单辆出租车的完整轨迹数据。
@@ -387,6 +381,7 @@ public class FrequentPathService {
                 return;
             }
         }
+        // 方法名从 createPathFromGridCellSequence 调整回 createPathFromGridCells
         Path pathKey = createPathFromGridCells(pathCells);
         if (pathKey == null || pathKey.getCellIdSequence().isEmpty()) {
             logger.warn("从网格单元列表未能成功创建Path对象。出租车 {}，行程段 {}", taxiId, segmentIndex);
