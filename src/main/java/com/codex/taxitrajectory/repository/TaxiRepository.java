@@ -22,7 +22,7 @@ public interface TaxiRepository {
 
     Set<String> getAllTaxiIds();
 
-    // 新增的流式方法，目前为F7/F8这类全量顺序处理设计 TODO: 拓展更多使用场景
+    // 新增的流式方法加载某个id的数据，避免瞬间加载过多  TODO: 拓展更多使用场景，考虑加入时间范围过滤
     Stream<TaxiRecord> streamRecordsByTaxiId(String taxiId) throws IOException; // 声明 IOException
 
 

@@ -63,7 +63,7 @@ public class TravelTimeController {
             } else {
                 log.info("通行时间分析完成，未找到符合条件的最短路径。");
             }
-
+            log.info("=============================");
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             // 捕获 Service 层明确抛出的参数错误 (例如：时间范围无效、区域无效等)
