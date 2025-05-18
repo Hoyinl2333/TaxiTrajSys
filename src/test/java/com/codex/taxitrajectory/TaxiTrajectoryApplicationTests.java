@@ -47,7 +47,7 @@ class TaxiTrajectoryApplicationTests {
 	@Test
 	public void testTaxiTrajectoryPage() {
 		// 构建测试页面的 URL
-		String baseUrl = "http://localhost:" + port + "/taxi-trajectory.html";
+		String baseUrl = "http://localhost:" + port + "/static/taxi-trajectory.html";
 		driver.get(baseUrl);
 
 		// 查找输入框并输入出租车 ID
