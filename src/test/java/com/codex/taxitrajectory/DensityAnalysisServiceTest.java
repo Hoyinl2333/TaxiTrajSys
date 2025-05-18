@@ -1,11 +1,9 @@
-package com.codex.taxitrajectory;
+package com.codex.taxitrajectory.service;
 
-import com.codex.taxitrajectory.model.result.DensityAnalysisResult;
+import com.codex.taxitrajectory.model.DensityAnalysisResult;
 import com.codex.taxitrajectory.model.query.DensityQuery;
-import com.codex.taxitrajectory.service.DensityAnalysisService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
@@ -14,9 +12,6 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * F4 区域车流密度分析功能测试
- */
 @SpringBootTest
 public class DensityAnalysisServiceTest {
 
@@ -25,113 +20,154 @@ public class DensityAnalysisServiceTest {
 
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    //  TODO: 查询时间范围不能过长，建议48h内
-
+    /**
+     * 测试基本车流密度分析功能
+     */
     @Test
-    public void testBasicDensityAnalysis() {
-        DensityQuery query = new DensityQuery();
-        query.setGridSize(1.0); // 1公里网格
-        query.setStartTime(LocalDateTime.parse("2008-02-02 15:00:00", formatter));
-        query.setEndTime(LocalDateTime.parse("2008-02-08 15:00:00", formatter));
-        query.setTimeSlotMinutes(60*24); // 24小时时间槽
+    public void testAnalyzeTrafficDensity() {
+        // 创建密度分析查询参数
+        DensityQuery query = new DensityQuery(
+                1.0, // 网格大小为1公里
+                LocalDateTime.parse("2008-02-02 15:00:00", formatter),
+                LocalDateTime.parse("2008-02-02 16:00:00", formatter),
+                60   // 时间粒度为60分钟
+        );
 
+        // 可选：设置区域边界
+        query.setMinLongitude(116.3);
+        query.setMinLatitude(39.8);
+        query.setMaxLongitude(116.5);
+        query.setMaxLatitude(40.0);
 
+        // 调用服务方法
         DensityAnalysisResult result = densityAnalysisService.analyzeTrafficDensity(query);
 
+        // 验证结果
         assertNotNull(result, "分析结果不应为空");
-        assertNotNull(result.getMinLat(), "网格信息不应为空");
-        assertNotNull(result.getMaxLat(), "网格信息不应为空");
+        assertNotNull(result.getGrid(), "网格信息不应为空");
         assertNotNull(result.getTimeSlots(), "时间槽列表不应为空");
         assertNotNull(result.getDensityMap(), "密度映射不应为空");
 
         // 验证时间槽数量
-        //assertEquals(6, result.getTimeSlots().size(), "应只有两个时间槽");
+        assertEquals(1, result.getTimeSlots().size(), "应该只有一个时间槽");
 
-        // 验证网格数量合理
-        int totalCells = result.getRows() * result.getCols();
-        assertTrue(totalCells > 0, "网格单元数量应大于0");
+        // 验证网格数量
+        int totalGridCells = result.getGrid().getRows() * result.getGrid().getCols();
+        assertTrue(totalGridCells > 0, "网格单元数量应大于0");
 
-        // 验证密度数据存在
-        Map<String, Integer> densityAtTime = result.getDensityMap().get(result.getTimeSlots().get(0));
-        assertNotNull(densityAtTime, "时间槽对应的密度数据不应为空");
-        assertFalse(densityAtTime.isEmpty(), "密度数据不应为空");
+        // 打印结果摘要
+        System.out.println("网格大小: " + query.getGridSize() + "公里");
+        System.out.println("网格行数: " + result.getGrid().getRows());
+        System.out.println("网格列数: " + result.getGrid().getCols());
+        System.out.println("总网格数: " + totalGridCells);
 
-        // 至少有一个网格密度大于0
-        boolean hasTraffic = densityAtTime.values().stream().anyMatch(d -> d > 0);
-        assertTrue(hasTraffic, "应至少有一个网格的车流密度大于0");
+        // 验证是否有车流密度数据
+        Map<LocalDateTime, Map<String, Integer>> densityMap = result.getDensityMap();
+        LocalDateTime timeSlot = result.getTimeSlots().get(0);
+        Map<String, Integer> cellDensities = densityMap.get(timeSlot);
 
-        System.out.println("=== 测试结果预览 ===");
-        System.out.println("查询时间范围：" + query.getStartTime() + " ~ " + query.getEndTime());
-        System.out.println("网格大小：" + query.getGridSize() + " km");
-        System.out.printf("经纬度范围：%.3f ~ %.3f 经度，%.3f ~ %.3f 纬度 (来自结果)%n",
-                result.getMinLon(), // 从 result 获取
-                result.getMaxLon(), // 从 result 获取
-                result.getMinLat(), // 从 result 获取
-                result.getMaxLat()  // 从 result 获取
-        );
-        System.out.printf("网格行列数：%d x %d，总计：%d 个网格%n",
-                result.getRows(), result.getCols(), totalCells);
+        assertNotNull(cellDensities, "单元格密度数据不应为空");
+        assertFalse(cellDensities.isEmpty(), "应该有密度数据");
 
-        for (LocalDateTime slot : result.getTimeSlots()) {
-            Map<String, Integer> slotDensity = result.getDensityMap().get(slot);
-            long nonEmpty = slotDensity.values().stream().filter(d -> d > 0).count();
-            int maxDensity = slotDensity.values().stream().max(Integer::compareTo).orElse(0);
-            System.out.printf("时间槽：%s | 非空网格数：%d | 最大密度：%d%n",
-                    slot.toString(), nonEmpty, maxDensity);
-        }
-
-        // 可选：输出前几个网格的密度情况
-        System.out.println("示例网格密度值（部分）：");
-        result.getDensityMap().get(result.getTimeSlots().get(0))
-                .entrySet().stream().limit(10).forEach(entry ->
-                        System.out.println("网格 " + entry.getKey() + " -> 密度：" + entry.getValue()));
+        // 验证是否有密度大于0的网格
+        boolean hasTraffic = cellDensities.values().stream().anyMatch(density -> density > 0);
+        assertTrue(hasTraffic, "应该至少有一个网格的密度大于0");
     }
 
+    /**
+     * 测试多时间段车流密度分析
+     */
     @Test
-    public void testMultipleTimeSlotsDensityAnalysis() {
-        DensityQuery query = new DensityQuery();
-        query.setGridSize(1.0); // 1公里网格
-        query.setStartTime(LocalDateTime.parse("2008-02-02 14:30:00", formatter));
-        query.setEndTime(LocalDateTime.parse("2008-02-02 15:30:00", formatter));
-        query.setTimeSlotMinutes(30); // 30分钟时间槽
+    public void testMultipleTimeSlots() {
+        // 创建密度分析查询参数 - 更长时间段和更小时间粒度
+        DensityQuery query = new DensityQuery(
+                0.5, // 网格大小为0.5公里
+                LocalDateTime.parse("2008-02-02 08:00:00", formatter),
+                LocalDateTime.parse("2008-02-02 10:00:00", formatter),
+                30   // 时间粒度为30分钟
+        );
 
+        // 设置区域边界（与之前测试相同）
+        query.setMinLongitude(116.3);
+        query.setMinLatitude(39.8);
+        query.setMaxLongitude(116.5);
+        query.setMaxLatitude(40.0);
 
-        // 执行车流密度分析
+        // 调用服务方法
         DensityAnalysisResult result = densityAnalysisService.analyzeTrafficDensity(query);
 
-        // 验证结果不为空
+        // 验证结果
         assertNotNull(result, "分析结果不应为空");
-        assertNotNull(result.getMinLat(), "网格信息不应为空");
-        assertNotNull(result.getMaxLat(), "网格信息不应为空");
-        assertNotNull(result.getTimeSlots(), "时间槽列表不应为空");
-        assertNotNull(result.getDensityMap(), "密度映射不应为空");
 
-        // 验证时间槽数量正确（每30分钟为一个时间槽，期望3个时间槽）
-        assertEquals(3, result.getTimeSlots().size(), "应有3个时间槽");
+        // 验证时间槽数量
+        assertEquals(4, result.getTimeSlots().size(), "应该有4个时间槽");
 
-        // 验证网格数量合理
-        int totalCells = result.getRows() * result.getCols();
-        assertTrue(totalCells > 0, "网格单元数量应大于0");
+        // 打印每个时间槽的统计信息
+        Map<LocalDateTime, Map<String, Integer>> densityMap = result.getDensityMap();
 
-        // 验证每个时间槽的密度数据
-        for (LocalDateTime slot : result.getTimeSlots()) {
-            Map<String, Integer> slotDensity = result.getDensityMap().get(slot);
-            assertNotNull(slotDensity, "时间槽对应的密度数据不应为空");
-            assertFalse(slotDensity.isEmpty(), "密度数据不应为空");
+        for (LocalDateTime timeSlot : result.getTimeSlots()) {
+            Map<String, Integer> cellDensities = densityMap.get(timeSlot);
+            assertNotNull(cellDensities, timeSlot + " 的密度数据不应为空");
 
-            long nonEmptyCells = slotDensity.values().stream().filter(d -> d > 0).count();
-            assertTrue(nonEmptyCells > 0, "每个时间槽至少应有一个网格的车流密度大于0");
+            // 计算该时间段的总车辆数和有车网格数
+            int totalTaxis = cellDensities.values().stream().mapToInt(Integer::intValue).sum();
+            long nonEmptyGrids = cellDensities.values().stream().filter(v -> v > 0).count();
 
-            // 输出每个时间槽的网格数据
-            int maxDensity = slotDensity.values().stream().max(Integer::compareTo).orElse(0);
-            System.out.printf("时间槽：%s | 非空网格数：%d | 最大密度：%d%n",
-                    slot.toString(), nonEmptyCells, maxDensity);
+            System.out.println("时间槽: " + timeSlot);
+            System.out.println("  总车辆数: " + totalTaxis);
+            System.out.println("  有车网格数: " + nonEmptyGrids);
+
+            // 获取最高密度
+            int maxDensity = cellDensities.values().stream()
+                    .mapToInt(Integer::intValue)
+                    .max()
+                    .orElse(0);
+            System.out.println("  最高密度: " + maxDensity);
         }
-//
-//        // 可选：输出前几个网格的密度情况
-//        System.out.println("示例网格密度值（部分）：");
-//        result.getDensityMap().get(result.getTimeSlots().get(0))
-//                .entrySet().stream().limit(10).forEach(entry ->
-//                        System.out.println("网格 " + entry.getKey() + " -> 密度：" + entry.getValue()));
+    }
+
+    /**
+     * 测试早高峰时段分析
+     */
+    @Test
+    public void testRushHourAnalysis() {
+        // 创建密度分析查询参数 - 早高峰时段
+        DensityQuery query = new DensityQuery(
+                1.0, // 网格大小为1公里
+                LocalDateTime.parse("2008-02-02 07:00:00", formatter),
+                LocalDateTime.parse("2008-02-02 09:00:00", formatter),
+                30   // 时间粒度为30分钟
+        );
+
+        // 调用服务方法
+        DensityAnalysisResult result = densityAnalysisService.analyzeTrafficDensity(query);
+
+        // 验证结果
+        assertNotNull(result, "分析结果不应为空");
+        assertEquals(4, result.getTimeSlots().size(), "应该有4个时间槽");
+
+        // 打印早高峰时段的密度变化
+        System.out.println("\n早高峰时段车流密度分析:");
+
+        Map<LocalDateTime, Map<String, Integer>> densityMap = result.getDensityMap();
+        for (LocalDateTime timeSlot : result.getTimeSlots()) {
+            Map<String, Integer> cellDensities = densityMap.get(timeSlot);
+
+            // 计算总车辆数
+            int totalTaxis = cellDensities.values().stream()
+                    .mapToInt(Integer::intValue)
+                    .sum();
+
+            // 计算平均密度（只考虑有车的网格）
+            double avgDensity = cellDensities.values().stream()
+                    .filter(v -> v > 0)
+                    .mapToInt(Integer::intValue)
+                    .average()
+                    .orElse(0);
+
+            System.out.println("时间: " + timeSlot);
+            System.out.println("  总车辆数: " + totalTaxis);
+            System.out.println("  平均密度: " + String.format("%.2f", avgDensity));
+        }
     }
 }

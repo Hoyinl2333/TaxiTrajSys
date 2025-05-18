@@ -24,7 +24,7 @@
 	<!-- 项目的构建属性 -->
 	<properties>
 		<!-- 设置 Java 编译版本 -->
-		<java.version>21</java.version>
+		<java.version>22</java.version>
 	</properties>
 
 	<!-- 项目依赖列表 -->
@@ -105,11 +105,6 @@
 			<scope>compile</scope>
 		</dependency>
 
-		<!-- 添加Caffeine依赖，Java 领域一个高性能、功能丰富的本地缓存库。 -->
-		<dependency>
-    		<groupId>com.github.ben-manes.caffeine</groupId>
-    		<artifactId>caffeine</artifactId>
-		</dependency>
 	</dependencies>
 
 
