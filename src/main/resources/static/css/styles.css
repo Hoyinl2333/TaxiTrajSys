@@ -209,3 +209,73 @@ button:hover {
 .path-points-table tr:hover {
   background-color: #e9ecef;
 }
+
+
+
+
+/* 路径选择器样式 */
+        .path-selector-container {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+
+        .path-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .path-selector {
+            flex-grow: 1;
+            margin: 0 10px;
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        .path-nav-btn {
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .path-nav-btn:hover {
+            background-color: #45a049;
+        }
+
+        .path-info {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e9f7ef;
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
+
+        /* 结果显示区域样式 */
+        #f1_result, #f3_result, #f4_result, #f9_result {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f0f8ff;
+            border-radius: 5px;
+            border-left: 4px solid #1e90ff;
+        }
+
+        /* 清除地图覆盖物按钮样式 */
+        .clear-map-btn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .clear-map-btn:hover {
+            background-color: #d32f2f;
+        }
