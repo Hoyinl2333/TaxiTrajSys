@@ -172,7 +172,7 @@ public class RegionCorrelationService {
             LocalDateTime startTime, LocalDateTime endTime, int timeSlotMinutes) {
         List<LocalDateTime> timeSlots = new ArrayList<>();
         LocalDateTime current = startTime;
-        while (!current.isAfter(endTime)) {
+        while (current.isBefore(endTime)) {
             timeSlots.add(current);
             current = current.plusMinutes(timeSlotMinutes);
         }
