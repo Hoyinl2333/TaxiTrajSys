@@ -134,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
             bottomRightLatitude2: Number.parseFloat(a2BRLat),
         }
         const baseURL = window.location.hostname === 'localhost' ? 'http://localhost:8080' : '';
-        const apiUrl = `${baseURL}/Correlation/trafficFlowChangeBetweenRegions`
+        const apiUrl = `${baseURL}/correlation/trafficFlowChangeBetweenRegions`;
 
         fetch(apiUrl, {
             method: "POST",

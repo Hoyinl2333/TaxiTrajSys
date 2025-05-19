@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
             timeSlotMinutes: Number.parseInt(document.getElementById("f6_timeInterval").value),
         }
         const baseURL = window.location.hostname === 'localhost' ? 'http://localhost:8080' : '';
-        const apiUrl = `${baseURL}/SingleCorrelation/trafficFlowChangeWithOtherRegions`
+        const apiUrl = `${baseURL}/correlation/trafficFlowChangeWithOtherRegions`
 
         fetch(apiUrl, {
             method: "POST",

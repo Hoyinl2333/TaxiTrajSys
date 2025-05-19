@@ -103,16 +103,16 @@ public class RegionQueryServiceTest {
                 116.3, 39.8,  // minLongitude, minLatitude
                 116.5, 40.0,  // maxLongitude, maxLatitude
                 LocalDateTime.parse("2008-02-03 11:25:00",formatter),
-                LocalDateTime.parse("2008-02-08 11:25:00",formatter)
+                LocalDateTime.parse("2008-02-05 11:25:00",formatter)
         );
 
         // 预热阶段：提前调用几次以排除 JVM 预热或缓存加载的影响
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 10; i++) {
             regionQueryService.getTaxisInRegion(query);
         }
 
         // 正式测试：执行指定次数，记录总耗时
-        final int iterations = 10;
+        final int iterations = 100;
         long totalNanoTime = 0;
         for (int i = 0; i < iterations; i++) {
             long startNano = System.nanoTime();
@@ -125,6 +125,8 @@ public class RegionQueryServiceTest {
         double averageMs = totalNanoTime / (iterations * 1_000_000.0);
         System.out.println("Average query time over " + iterations + " iterations: " + averageMs + " ms");
 
+        // 可根据实际预期设置响应时间阈值，例如要求在500ms以内
+        assertTrue(averageMs < 500, "Average query time should be under 500ms");
     }
 
     /**
