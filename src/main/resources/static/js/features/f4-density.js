@@ -1,4 +1,12 @@
-
+/**
+ * Taxi Trajectory Density Analysis Frontend Logic (F4)
+ *
+ * Optimizes visual effects by using a global effective max density (percentile-based)
+ * and a refined multi-step color scale.
+ * Assumes Baidu Maps API (BMapGL) is loaded and Heatmap library if HeatmapOverlay is used (not used in this version).
+ * This script will poll for the global `map` instance initialized by another script (e.g., main.js).
+ * Assumes specific HTML element IDs for inputs and controls.
+ */
 (function (BMapGL, window, document) {
     'use strict';
 
@@ -12,17 +20,18 @@
         maxLongitude: null, minLatitude: null, gridSize: null, timeSlotMinutes: null,
         analyzeBtn: null, resultDiv: null, commonResultDiv: null,
         currentTimeSlotDisplay: null, prevTimeSlotBtn: null, nextTimeSlotBtn: null,
-        mapContainerParent: null // 地图的父容器，图例会添加到这里
+        mapContainerParent: null
     };
 
     // --- 3. 应用状态管理 ---
     let appState = {
         mapInstance: null,
         densityResult: null,
-        currentQueryInputParams: null, // 存储当次查询的用户输入参数，用于绘图
+        currentQueryInputParams: null,
         currentTimeIndex: 0,
         densityOverlays: [],
-        gridCellPolygons: new Map()
+        gridCellPolygons: new Map(),
+        globalEffectiveMaxDensity: 0
     };
 
     // --- 4. API 服务 ---
@@ -41,9 +50,12 @@
             const responseData = await response.json();
 
             if (!response.ok) {
-                let errorMsg = responseData.message || `网络响应异常，状态码: ${response.status}`;
-                if (responseData.errors && Array.isArray(responseData.errors)) {
-                    errorMsg += ": " + responseData.errors.map(e => e.defaultMessage || e.field).join(', ');
+                let errorMsg = `网络响应异常，状态码: ${response.status}`;
+                if (responseData && responseData.message) {
+                    errorMsg = responseData.message;
+                }
+                if (responseData && responseData.errors && Array.isArray(responseData.errors)) {
+                    errorMsg += " (详情: " + responseData.errors.map(e => e.defaultMessage || e.field).join(', ') + ")";
                 }
                 throw new Error(errorMsg);
             }
@@ -56,8 +68,8 @@
     // --- 5. 地图可视化模块 ---
     const mapVisualizer = {
         initialize(mapInstanceFromGlobal) {
-            if (!mapInstanceFromGlobal) {
-                console.error("Density Analysis (F4): Baidu Map instance is not available for visualizer.");
+            if (!mapInstanceFromGlobal || !(mapInstanceFromGlobal instanceof BMapGL.Map)) { // 确保是BMapGL的实例
+                console.error("Density Analysis (F4): Baidu Map instance is not available or invalid for visualizer.");
                 return false;
             }
             appState.mapInstance = mapInstanceFromGlobal;
@@ -85,49 +97,39 @@
                 return;
             }
 
-            const { rows, cols } = gridResultData; // 从后端结果获取行数和列数
-            // 从用户原始输入获取地理边界 (这些是构建Grid的原始依据)
+            const { rows, cols } = gridResultData;
             const { minLongitude, minLatitude, maxLongitude, maxLatitude } = queryInputParams;
 
             if (!Number.isFinite(minLongitude) || !Number.isFinite(minLatitude) ||
                 !Number.isFinite(maxLongitude) || !Number.isFinite(maxLatitude) ||
-                rows == null || cols == null ) { // rows/cols 可以是0，但不能是null/undefined
+                rows == null || cols == null ) {
                 console.warn("Density Analysis (F4): Grid dimensions or query input bounds are invalid for drawing.", gridResultData, queryInputParams);
                 displayError("返回的网格维度或查询边界无效，无法绘制。");
                 return;
             }
+
+            // 绘制总边界 (即使行列数为0也绘制，以便用户看到查询范围)
+            if (Number.isFinite(minLongitude)) {
+                const borderPoints = [
+                    new BMapGL.Point(minLongitude, maxLatitude), new BMapGL.Point(maxLongitude, maxLatitude),
+                    new BMapGL.Point(maxLongitude, minLatitude), new BMapGL.Point(minLongitude, minLatitude),
+                    new BMapGL.Point(minLongitude, maxLatitude)
+                ];
+                const borderPolygon = new BMapGL.Polygon(borderPoints, {
+                    strokeColor: "#1E90FF", strokeWeight: 2, strokeOpacity: 0.9, fillOpacity: 0
+                });
+                appState.mapInstance.addOverlay(borderPolygon);
+                appState.densityOverlays.push(borderPolygon);
+            }
+
             if (rows === 0 || cols === 0) {
-                console.warn("Density Analysis (F4): Grid has zero rows or columns. Drawing boundary only.");
-                // 即使行列为0，也尝试绘制查询的边界框
-                if (Number.isFinite(minLongitude)) { // 确保边界值有效
-                    const borderPoints = [
-                        new BMapGL.Point(minLongitude, maxLatitude), new BMapGL.Point(maxLongitude, maxLatitude),
-                        new BMapGL.Point(maxLongitude, minLatitude), new BMapGL.Point(minLongitude, minLatitude),
-                        new BMapGL.Point(minLongitude, maxLatitude)
-                    ];
-                    const borderPolygon = new BMapGL.Polygon(borderPoints, {
-                        strokeColor: "#1E90FF", strokeWeight: 2, strokeOpacity: 0.9, fillOpacity: 0
-                    });
-                    appState.mapInstance.addOverlay(borderPolygon);
-                    appState.densityOverlays.push(borderPolygon);
-                }
+                console.warn("Density Analysis (F4): Grid has zero rows or columns. Only drawing boundary.");
                 displayResultsInfo("分析区域有效，但网格行列数为0，无法进一步细分显示单元格。");
-                return;
+                return; // 不绘制小单元格
             }
 
             const cellWidth = (maxLongitude - minLongitude) / cols;
             const cellHeight = (maxLatitude - minLatitude) / rows;
-
-            const borderPoints = [
-                new BMapGL.Point(minLongitude, maxLatitude), new BMapGL.Point(maxLongitude, maxLatitude),
-                new BMapGL.Point(maxLongitude, minLatitude), new BMapGL.Point(minLongitude, minLatitude),
-                new BMapGL.Point(minLongitude, maxLatitude)
-            ];
-            const borderPolygon = new BMapGL.Polygon(borderPoints, {
-                strokeColor: "#1E90FF", strokeWeight: 2, strokeOpacity: 0.9, fillOpacity: 0
-            });
-            appState.mapInstance.addOverlay(borderPolygon);
-            appState.densityOverlays.push(borderPolygon);
 
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
@@ -153,112 +155,65 @@
             console.log("Density Analysis (F4): Grid drawn on map using input bounds and result rows/cols.");
         },
 
-        // 在 mapVisualizer 对象内部
         updateHeatmapForTimeSlot(timeIndex) {
-            console.log(`[F4 DEBUG] mapVisualizer.updateHeatmapForTimeSlot: 函数开始执行，timeIndex: ${timeIndex}`);
-
             if (!appState.mapInstance || !appState.densityResult || !appState.densityResult.timeSlots || appState.densityResult.timeSlots.length === 0) {
                 console.warn("[F4 DEBUG] mapVisualizer.updateHeatmapForTimeSlot: 缺少数据或地图实例，提前返回。", appState);
                 return;
             }
 
             appState.currentTimeIndex = timeIndex;
-            // timeSlotKeyFromList 通常是带秒的, e.g., "2008-02-02T14:30:00"
             const timeSlotKeyFromList = appState.densityResult.timeSlots[timeIndex];
 
-            console.log(`[F4 DETAIL DEBUG] Processing timeSlotKeyFromList: "${timeSlotKeyFromList}" (length: ${timeSlotKeyFromList.length}, type: ${typeof timeSlotKeyFromList})`);
-
-            let slotDataFromMap = appState.densityResult.densityMap[timeSlotKeyFromList]; // 首先尝试用原始的、带秒的键
-
-            // 如果用带秒的键找不到，并且它以 ":00" 结尾，则尝试去掉 ":00" 再找一次
+            let slotDataFromMap = appState.densityResult.densityMap[timeSlotKeyFromList];
             if (slotDataFromMap === undefined && timeSlotKeyFromList.endsWith(":00")) {
-                const timeSlotKeyWithoutSeconds = timeSlotKeyFromList.substring(0, timeSlotKeyFromList.length - 3); // 去掉末尾的 ":00"
-                console.log(`[F4 DETAIL DEBUG] Key "${timeSlotKeyFromList}" not found. Trying key without seconds: "${timeSlotKeyWithoutSeconds}"`);
+                const timeSlotKeyWithoutSeconds = timeSlotKeyFromList.substring(0, timeSlotKeyFromList.length - 3);
                 slotDataFromMap = appState.densityResult.densityMap[timeSlotKeyWithoutSeconds];
-
-                if (slotDataFromMap === undefined) {
-                    console.error(`[F4 CRITICAL DEBUG] Key "${timeSlotKeyFromList}" AND "${timeSlotKeyWithoutSeconds}" NOT FOUND in appState.densityResult.densityMap! Available keys:`, Object.keys(appState.densityResult.densityMap));
-                } else {
-                    console.log(`[F4 DETAIL DEBUG] Successfully found data using key without seconds: "${timeSlotKeyWithoutSeconds}"`);
-                }
-            } else if (slotDataFromMap !== undefined) {
-                console.log(`[F4 DETAIL DEBUG] Successfully found data using key with seconds: "${timeSlotKeyFromList}"`);
-            } else {
-                // slotDataFromMap is undefined and timeSlotKeyFromList does not end with ":00"
-                console.error(`[F4 CRITICAL DEBUG] Key "${timeSlotKeyFromList}" NOT FOUND and does not end with ':00'. Available keys:`, Object.keys(appState.densityResult.densityMap));
-            }
-
-            console.log(`[F4 DETAIL DEBUG] slotDataFromMap (after attempting key variations):`, slotDataFromMap ? JSON.parse(JSON.stringify(slotDataFromMap)) : undefined);
-            if (slotDataFromMap) {
-                console.log(`[F4 DETAIL DEBUG] typeof slotDataFromMap: ${typeof slotDataFromMap}`);
-                console.log(`[F4 DETAIL DEBUG] Is slotDataFromMap an Array? ${Array.isArray(slotDataFromMap)}`);
-                console.log(`[F4 DETAIL DEBUG] Keys in slotDataFromMap (using Object.keys):`, Object.keys(slotDataFromMap));
             }
 
             const slotDensityData = slotDataFromMap || {};
 
-            let maxDensity = 0;
-            const numericDensitiesInSlot = [];
-
-            for (const cellKey in slotDensityData) {
-                if (slotDensityData.hasOwnProperty(cellKey)) {
-                    const rawValue = slotDensityData[cellKey];
-                    const density = Number(rawValue);
-
-                    if (!isNaN(density)) {
-                        numericDensitiesInSlot.push(density);
-                        if (density > maxDensity) {
-                            maxDensity = density;
-                        }
-                    } else {
-                        console.warn(`[F4 DENSITY WARNING] Invalid non-numeric density value found for cell ${cellKey}:`, rawValue);
-                    }
-                }
-            }
-
-            const nonZeroDensities = numericDensitiesInSlot.filter(d => d > 0).sort((a, b) => a - b);
-
-            // 现在使用 timeSlotKeyFromList (带秒的) 作为日志和UI显示的时间，保持一致性
+            // 调试信息
+            const currentSlotDensities = Object.values(slotDensityData).map(Number).filter(d=>!isNaN(d) && d > 0);
             console.log(`[F4 DENSITY DEBUG] Time Slot: ${timeSlotKeyFromList}`);
-            console.log(`[F4 DENSITY DEBUG] Max Density in this slot (after Number() conversion): ${maxDensity}`);
-            console.log(`[F4 DENSITY DEBUG] Non-zero densities count (after Number() conversion): ${nonZeroDensities.length}`);
-            if (nonZeroDensities.length > 0) {
-                console.log(`[F4 DENSITY DEBUG] Min non-zero density: ${nonZeroDensities[0]}`);
-                console.log(`[F4 DENSITY DEBUG] Median non-zero density: ${nonZeroDensities[Math.floor(nonZeroDensities.length / 2)]}`);
-                console.log(`[F4 DENSITY DEBUG] A few sample non-zero densities:`, nonZeroDensities.slice(0, Math.min(20, nonZeroDensities.length)));
-            }
+            console.log(`[F4 DENSITY DEBUG] Non-zero densities in this slot: ${currentSlotDensities.length}, Max in this slot: ${currentSlotDensities.length > 0 ? Math.max(...currentSlotDensities) : 0}`);
+            console.log(`[F4 DENSITY DEBUG] Using globalEffectiveMaxDensity for normalization: ${appState.globalEffectiveMaxDensity}`);
 
             appState.gridCellPolygons.forEach((polygon, cellId) => {
                 const rawDensityValue = slotDensityData[cellId];
                 const density = (rawDensityValue !== undefined && !isNaN(Number(rawDensityValue))) ? Number(rawDensityValue) : 0;
 
                 let normalizedDensity = 0;
-                if (maxDensity > 0) {
-                    normalizedDensity = density / maxDensity;
+                if (appState.globalEffectiveMaxDensity > 0) {
+                    normalizedDensity = Math.min(density, appState.globalEffectiveMaxDensity) / appState.globalEffectiveMaxDensity;
                 }
 
                 const color = this.getColorForDensity(normalizedDensity, density);
                 polygon.setFillColor(color);
-                polygon.setFillOpacity(0.7);
+                polygon.setFillOpacity(0.75);
             });
-            updateTimeDisplay(); // updateTimeDisplay 内部也使用 appState.densityResult.timeSlots[appState.currentTimeIndex] 来获取时间
+            updateTimeDisplay();
         },
 
         getColorForDensity(normalizedDensity, actualDensity) {
-            if (actualDensity === 0) return "#ADD8E6";
+            if (actualDensity === 0) return "#EFF3FF"; // 非常浅的蓝灰色，比 #ADD8E6 更中性
+
             let r, g, b;
-            if (normalizedDensity < 0.25) {
-                const p = normalizedDensity / 0.25;
-                r = 0; g = Math.round(p * 255); b = Math.round((1 - p) * 255);
-            } else if (normalizedDensity < 0.5) {
-                const p = (normalizedDensity - 0.25) / 0.25;
-                r = Math.round(p * 255); g = 255; b = 0;
-            } else if (normalizedDensity < 0.75) {
-                const p = (normalizedDensity - 0.5) / 0.25;
-                r = 255; g = Math.round(255 - p * (255 - 165)); b = 0;
+            if (normalizedDensity <= 0) {
+                r = 100; g = 149; b = 237;    // CornflowerBlue
+            } else if (normalizedDensity < 0.02) {
+                r = 173; g = 216; b = 230;    // LightBlue
+            } else if (normalizedDensity < 0.10) {
+                r = 100; g = 149; b = 237;    // CornflowerBlue
+            } else if (normalizedDensity < 0.25) {
+                r = 0;   g = 191; b = 255;    // DeepSkyBlue
+            } else if (normalizedDensity < 0.40) {
+                r = 60;  g = 179; b = 113;    // MediumSeaGreen
+            } else if (normalizedDensity < 0.60) {
+                r = 255; g = 255; b = 0;      // Yellow
+            } else if (normalizedDensity < 0.80) {
+                r = 255; g = 165; b = 0;      // Orange
             } else {
-                const p = (normalizedDensity - 0.75) / 0.25;
-                r = 255; g = Math.round(165 - p * 165); b = 0;
+                r = 255; g = 69;  b = 0;      // OrangeRed
             }
             return `rgb(${r},${g},${b})`;
         },
@@ -281,18 +236,21 @@
             legendDiv.innerHTML = `
                 <div style="font-weight: bold; margin-bottom: 8px; text-align: center;">车流密度</div>
                 <div style="display: flex; align-items: center; margin-bottom: 4px;">
-                    <div style="height: 15px; width: 15px; background-color: #ADD8E6; margin-right: 8px; border: 1px solid #999;"></div>
-                    <span>零密度</span>
+                    <div style="height: 15px; width: 15px; background-color: #EFF3FF; margin-right: 8px; border: 1px solid #999;"></div>
+                    <span>零密度 / 无数据</span>
                 </div>
-                <div style="margin-bottom: 4px;">密度渐变:</div>
-                <div style="height: 20px; width: 180px; background: linear-gradient(to right, blue, limegreen, yellow, orange, red); border: 1px solid #ccc; margin-bottom: 2px;"></div>
-                <div style="display: flex; justify-content: space-between; width: 180px;">
+                <div style="margin-bottom: 4px;">密度渐变 (示意):</div>
+                <div style="height: 20px; width: 180px; background: linear-gradient(to right, 
+                    rgb(173,216,230), rgb(100,149,237), rgb(0,191,255), 
+                    rgb(60,179,113), rgb(255,255,0), rgb(255,165,0), rgb(255,69,0)
+                    ); border: 1px solid #ccc; margin-bottom: 2px;"></div>
+                <div style="display: flex; justify-content: space-between; width: 180px; font-size: 12px;">
                     <span>低</span><span>高</span>
                 </div>
             `;
             ui.mapContainerParent.appendChild(legendDiv);
             appState.densityOverlays.push(legendDiv);
-            console.log("Density Analysis (F4): Legend added.");
+            console.log("Density Analysis (F4): Legend added/updated.");
         },
 
         removeLegend() {
@@ -303,7 +261,7 @@
             }
         },
 
-        fitMapToArea(queryInputParams) { // 使用用户输入的边界参数
+        fitMapToArea(queryInputParams) {
             if (!appState.mapInstance || !queryInputParams) return;
             const { minLongitude, minLatitude, maxLongitude, maxLatitude } = queryInputParams;
 
@@ -328,7 +286,6 @@
     function showLoading(isLoading, message = "正在处理...") {
         if (!ui.resultDiv) return;
         ui.resultDiv.innerHTML = isLoading ? `<p>${message} <span class="loading-spinner"></span></p>` : "";
-        // 您可能需要为 .loading-spinner 添加CSS动画
     }
     function displayResultsInfo(message) {
         if (!ui.resultDiv) return;
@@ -359,81 +316,114 @@
             return;
         }
 
-        // 1. 获取并校验输入参数
-        const currentParams = { // 将用户输入存储起来，供绘图使用
-            gridSize: parseFloat(ui.gridSize.value),
-            startTime: ui.startTime.value,
-            endTime: ui.endTime.value,
-            timeSlotMinutes: parseInt(ui.timeSlotMinutes.value, 10),
-            minLongitude: parseFloat(ui.minLongitude.value),
-            maxLatitude: parseFloat(ui.maxLatitude.value),
-            maxLongitude: parseFloat(ui.maxLongitude.value),
-            minLatitude: parseFloat(ui.minLatitude.value)
+        // 7.1 获取并严格校验输入参数
+        const rawInputs = {
+            gridSize: ui.gridSize.value, startTime: ui.startTime.value, endTime: ui.endTime.value,
+            timeSlotMinutes: ui.timeSlotMinutes.value, minLongitude: ui.minLongitude.value,
+            maxLatitude: ui.maxLatitude.value, maxLongitude: ui.maxLongitude.value, minLatitude: ui.minLatitude.value
         };
-        appState.currentQueryInputParams = currentParams; // 保存当次查询的输入参数
-
+        const currentParams = {};
         let errors = [];
-        if (isNaN(currentParams.gridSize) || currentParams.gridSize <= 0) errors.push("网格大小必须为正数。");
-        if (!currentParams.startTime) errors.push("开始时间不能为空。");
-        if (!currentParams.endTime) errors.push("结束时间不能为空。");
+
+        currentParams.gridSize = parseFloat(rawInputs.gridSize);
+        if (isNaN(currentParams.gridSize) || currentParams.gridSize <= 0) errors.push("网格大小必须为有效的正数。");
+
+        currentParams.timeSlotMinutes = parseInt(rawInputs.timeSlotMinutes, 10);
+        if (isNaN(currentParams.timeSlotMinutes) || currentParams.timeSlotMinutes <= 0) errors.push("时间间隔必须为有效的正整数。");
+
+        if (!rawInputs.startTime) errors.push("开始时间不能为空。"); else currentParams.startTime = rawInputs.startTime;
+        if (!rawInputs.endTime) errors.push("结束时间不能为空。"); else currentParams.endTime = rawInputs.endTime;
         if (currentParams.startTime && currentParams.endTime && currentParams.startTime >= currentParams.endTime) errors.push("结束时间必须晚于开始时间。");
-        if (isNaN(currentParams.timeSlotMinutes) || currentParams.timeSlotMinutes <= 0) errors.push("时间间隔必须为正数。");
 
-        if (isNaN(currentParams.minLongitude)) errors.push("最小经度不能为空且必须为数字。");
-        if (isNaN(currentParams.minLatitude)) errors.push("最小纬度不能为空且必须为数字。");
-        if (isNaN(currentParams.maxLongitude)) errors.push("最大经度不能为空且必须为数字。");
-        if (isNaN(currentParams.maxLatitude)) errors.push("最大纬度不能为空且必须为数字。");
+        const geoFields = { minLongitude: "最小经度", maxLatitude: "最大纬度", maxLongitude: "最大经度", minLatitude: "最小纬度"};
+        for (const key in geoFields) {
+            if (!rawInputs[key]) {
+                errors.push(`${geoFields[key]}不能为空。`);
+                currentParams[key] = NaN;
+            } else {
+                currentParams[key] = parseFloat(rawInputs[key]);
+                if (isNaN(currentParams[key])) errors.push(`${geoFields[key]}必须为有效的数字。`);
+            }
+        }
+        if (!isNaN(currentParams.minLongitude) && !isNaN(currentParams.maxLongitude) && currentParams.minLongitude >= currentParams.maxLongitude) errors.push("最小经度必须小于最大经度。");
+        if (!isNaN(currentParams.minLatitude) && !isNaN(currentParams.maxLatitude) && currentParams.minLatitude >= currentParams.maxLatitude) errors.push("最小纬度必须小于最大纬度。");
 
-        if (!isNaN(currentParams.minLongitude) && !isNaN(currentParams.maxLongitude) && currentParams.minLongitude >= currentParams.maxLongitude) {
-            errors.push("最小经度必须小于最大经度。");
-        }
-        if (!isNaN(currentParams.minLatitude) && !isNaN(currentParams.maxLatitude) && currentParams.minLatitude >= currentParams.maxLatitude) {
-            errors.push("最小纬度必须小于最大纬度。");
-        }
-        const lonLatCheck = (val, min, max, name) => { if (!isNaN(val) && (val < min || val > max)) errors.push(`${name}必须在 ${min} 和 ${max} 之间。`);};
-        lonLatCheck(currentParams.minLongitude, -180, 180, "最小经度"); lonLatCheck(currentParams.maxLongitude, -180, 180, "最大经度");
-        lonLatCheck(currentParams.minLatitude, -90, 90, "最小纬度"); lonLatCheck(currentParams.maxLatitude, -90, 90, "最大纬度");
+        const lonLatRangeCheck = (val, min, max, name) => { if (!isNaN(val) && (val < min || val > max)) errors.push(`${name}必须在 ${min} 和 ${max} 之间。`);};
+        lonLatRangeCheck(currentParams.minLongitude, -180, 180, "最小经度"); lonLatRangeCheck(currentParams.maxLongitude, -180, 180, "最大经度");
+        lonLatRangeCheck(currentParams.minLatitude, -90, 90, "最小纬度"); lonLatRangeCheck(currentParams.maxLatitude, -90, 90, "最大纬度");
 
         if (errors.length > 0) {
             alert("输入参数错误：\n" + errors.join("\n"));
             displayError("输入参数校验失败，请检查。<br>" + errors.join("<br>"));
+            console.log("[F4 VALIDATION DEBUG] Client-side validation failed. Errors:", errors, "Raw Inputs:", rawInputs);
             return;
         }
-
+        appState.currentQueryInputParams = currentParams;
         console.log('Density Analysis (F4): 发送到后端的请求参数:', currentParams);
 
         try {
             mapVisualizer.clearAllOverlays();
-            appState.densityResult = null; // 清空旧结果
+            appState.densityResult = null;
             appState.currentTimeIndex = 0;
+            appState.globalEffectiveMaxDensity = 0;
             updateTimeDisplay();
 
-            const resultData = await fetchDensityData(currentParams); // resultData 是简化结构 {rows, cols, timeSlots, densityMap}
-            console.log("Density Analysis (F4): 从后端接收到的简化数据:", resultData);
+            const resultData = await fetchDensityData(currentParams);
+            console.log("Density Analysis (F4): 从后端接收到的简化数据:", JSON.parse(JSON.stringify(resultData)));
 
             if (!resultData || typeof resultData.densityMap !== 'object' || !Array.isArray(resultData.timeSlots) ||
-                resultData.rows == null || resultData.cols == null) { // 检查 rows/cols 是否存在 (可以是0)
+                resultData.rows == null || resultData.cols == null) {
                 throw new Error("返回的数据格式不正确或缺少必要字段 (rows, cols, densityMap, timeSlots)。");
             }
             appState.densityResult = resultData;
 
-            // 可视化: drawGrid 需要后端返回的 rows/cols 和用户输入的边界(currentParams)
+            // ---- 计算全局有效最大密度 ----
+            let allNonZeroDensities = [];
+            if (appState.densityResult.densityMap) {
+                Object.values(appState.densityResult.densityMap).forEach(slotData => {
+                    if (typeof slotData === 'object' && slotData !== null) { // 确保slotData是对象
+                        Object.values(slotData).forEach(rawValue => {
+                            const density = Number(rawValue);
+                            if (!isNaN(density) && density > 0) {
+                                allNonZeroDensities.push(density);
+                            }
+                        });
+                    }
+                });
+            }
+
+            if (allNonZeroDensities.length > 0) {
+                allNonZeroDensities.sort((a, b) => a - b);
+                const percentile = 0.98;
+                let index = Math.floor(allNonZeroDensities.length * percentile);
+                index = Math.min(index, allNonZeroDensities.length - 1); // Cap at last element
+                index = Math.max(0, index); // Ensure index is not negative
+                appState.globalEffectiveMaxDensity = allNonZeroDensities[index];
+
+                if (appState.globalEffectiveMaxDensity === 0 && allNonZeroDensities[allNonZeroDensities.length - 1] > 0) {
+                    appState.globalEffectiveMaxDensity = allNonZeroDensities[allNonZeroDensities.length - 1];
+                }
+            } else {
+                appState.globalEffectiveMaxDensity = 0;
+            }
+            console.log(`[F4 GLOBAL DEBUG] All non-zero densities collected count: ${allNonZeroDensities.length}`);
+            console.log(`[F4 GLOBAL DEBUG] Global Effective Max Density (e.g., 98th percentile): ${appState.globalEffectiveMaxDensity}`);
+            // ---- 全局有效最大密度计算结束 ----
+
             mapVisualizer.drawGrid(resultData, currentParams);
 
-            // fitMapToArea 使用用户输入的边界(currentParams)
             if (currentParams.minLongitude != null) {
                 mapVisualizer.fitMapToArea(currentParams);
             }
 
-            if (resultData.timeSlots.length === 0 || Object.keys(resultData.densityMap).length === 0) {
+            if (resultData.timeSlots.length === 0 || (allNonZeroDensities.length === 0 && Object.keys(resultData.densityMap).every(key => Object.keys(resultData.densityMap[key]).length === 0) ) ) {
                 displayResultsInfo("分析完成。在指定条件下未找到有效的密度数据。");
-                // 即使没有密度数据，网格和区域也已绘制，地图也已调整
+                mapVisualizer.addLegend();
                 return;
             }
 
             mapVisualizer.updateHeatmapForTimeSlot(0);
             mapVisualizer.addLegend();
-            // fitMapToArea 已在 drawGrid 后调用
 
             displayResultsInfo(`密度分析成功，共 ${resultData.timeSlots.length} 个时间点。使用时间切换按钮查看。`);
 
@@ -445,38 +435,37 @@
 
     // --- 8. 事件监听器设置 ---
     function setupEventListeners() {
-        if (!ui.analyzeBtn) {
-            console.error("Density Analysis (F4): 分析按钮 'densityAnalysisBtn' 未在DOM中找到。");
+        if (!ui.analyzeBtn && !ui.prevTimeSlotBtn && !ui.nextTimeSlotBtn) {
+            console.error("Density Analysis (F4): 关键UI按钮未能获取，事件监听器无法设置。请检查HTML ID。");
             return;
         }
-        ui.analyzeBtn.addEventListener("click", handleAnalyzeDensity);
-
+        if (ui.analyzeBtn) {
+            ui.analyzeBtn.addEventListener("click", handleAnalyzeDensity);
+        } else {
+            console.error("Density Analysis (F4): 分析按钮 'densityAnalysisBtn' 未在DOM中找到。");
+        }
         if (ui.prevTimeSlotBtn) {
             ui.prevTimeSlotBtn.addEventListener("click", () => {
-                if (appState.densityResult && appState.densityResult.timeSlots.length > 0 && appState.currentTimeIndex > 0) {
+                if (appState.densityResult && appState.densityResult.timeSlots &&
+                    appState.densityResult.timeSlots.length > 0 && appState.currentTimeIndex > 0) {
                     mapVisualizer.updateHeatmapForTimeSlot(appState.currentTimeIndex - 1);
-                }
+                } else {console.log("Density Analysis (F4): 无法切换到上一个时间槽。");}
             });
-        } else {
-            console.warn("Density Analysis (F4): 上一时间槽按钮 'prevTimeSlot' 未找到。");
-        }
-
+        } else { console.warn("Density Analysis (F4): “上一时间槽”按钮 'prevTimeSlot' 未找到。");}
         if (ui.nextTimeSlotBtn) {
             ui.nextTimeSlotBtn.addEventListener("click", () => {
-                if (appState.densityResult && appState.densityResult.timeSlots.length > 0 && appState.currentTimeIndex < appState.densityResult.timeSlots.length - 1) {
+                if (appState.densityResult && appState.densityResult.timeSlots &&
+                    appState.densityResult.timeSlots.length > 0 && appState.currentTimeIndex < appState.densityResult.timeSlots.length - 1) {
                     mapVisualizer.updateHeatmapForTimeSlot(appState.currentTimeIndex + 1);
-                }
+                } else {console.log("Density Analysis (F4): 无法切换到下一个时间槽。");}
             });
-        } else {
-            console.warn("Density Analysis (F4): 下一时间槽按钮 'nextTimeSlot' 未找到。");
-        }
+        } else { console.warn("Density Analysis (F4): “下一时间槽”按钮 'nextTimeSlot' 未找到。");}
         console.log("Density Analysis (F4): Event listeners set up.");
     }
 
-    // --- 9. 初始化 ---
+    // --- 9. 初始化 (轮询逻辑) ---
     document.addEventListener("DOMContentLoaded", () => {
         console.log("Density Analysis (F4): DOMContentLoaded 事件触发。");
-
         ui.startTime = document.getElementById("f4_startTime");
         ui.endTime = document.getElementById("f4_endTime");
         ui.minLongitude = document.getElementById("f4_topLeftLng");
@@ -502,11 +491,8 @@
                 f4Container.appendChild(newResultDiv);
                 ui.resultDiv = newResultDiv;
                 console.log("Density Analysis (F4): #f4_result div 已动态创建。");
-            } else {
-                console.error("Density Analysis (F4): 无法找到父容器 #f4 来创建 #f4_result div。");
-            }
+            } else { console.error("Density Analysis (F4): 无法找到父容器 #f4 来创建 #f4_result div。");}
         }
-
         if (!ui.analyzeBtn) {
             console.error("Density Analysis (F4): 分析按钮未找到，功能可能无法使用。");
             if(ui.resultDiv) displayError("页面初始化不完整（缺少分析按钮），功能可能无法使用。");
@@ -529,29 +515,24 @@
             console.log("Density Analysis (F4): 地图相关组件已成功初始化。");
             return true;
         }
-
         function tryInitializeMapLogic() {
             if (typeof window.map !== "undefined" &&
                 window.map instanceof BMapGL.Map &&
                 typeof window.map.getCenter === "function" &&
-                window.map.getCenter()
-            ) {
+                window.map.getCenter() ) {
                 console.log("Density Analysis (F4): 全局 'map' 实例找到并已准备就绪。");
                 clearInterval(mapCheckInterval);
                 clearTimeout(mapCheckTimeout);
                 initializeMapDependentComponents(window.map);
             }
         }
-
         mapCheckInterval = setInterval(tryInitializeMapLogic, MAP_CHECK_INTERVAL_MS);
-
         mapCheckTimeout = setTimeout(() => {
             clearInterval(mapCheckInterval);
             if (typeof window.map !== "undefined" &&
                 window.map instanceof BMapGL.Map &&
                 typeof window.map.getCenter === "function" &&
-                window.map.getCenter()
-            ) {
+                window.map.getCenter() ) {
                 if (!appState.mapInstance) {
                     initializeMapDependentComponents(window.map);
                 }
