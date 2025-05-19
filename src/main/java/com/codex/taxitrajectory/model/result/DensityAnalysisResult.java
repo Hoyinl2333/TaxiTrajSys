@@ -12,10 +12,11 @@ import java.util.Map;
  */
 @Data
 public class DensityAnalysisResult {
-    // 网格信息
-    private Double gridSize; // 单位：km
-    private Double minLon,minLat;
-    private Double maxLon,maxLat;
+    // 网格信息直接从前端获取
+//    private Double gridSize; // 单位：km
+//    private Double minLon,minLat;
+//    private Double maxLon,maxLat;
+
     private Integer rows,cols;
 
     private List<LocalDateTime> timeSlots;  // 时间槽列表
