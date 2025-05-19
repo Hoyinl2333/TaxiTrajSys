@@ -25,7 +25,7 @@ public class FrequentPathController {
      * 示例 URL: GET /api/paths/frequent/citywide?k=10&minDistance=1
      * (minDistance 单位是千米)
      */
-    @GetMapping("/frequent/citywide")
+    @PostMapping ("/frequent/citywide")
     public ResponseEntity<FrequentPathResult> getCitywideFrequentPaths(
             @RequestParam(defaultValue = "10") int k,
             @RequestParam(defaultValue = "1") double minPathDistanceKM // 用户输入的距离 x (km)
