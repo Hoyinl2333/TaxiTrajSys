@@ -7,50 +7,7 @@
     <link rel="stylesheet" href="css/styles.css">
     <!-- 引入百度地图API -->
     <script type="text/javascript" src="https://api.map.baidu.com/api?v=1.0&&type=webgl&ak=TjH2DBugCdwnk9PDVFl4B0wF0CC0v47N"></script>
-    <style>
-        /* 路径选择器样式 */
-        .path-selector-container {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #f5f5f5;
-            border-radius: 5px;
-        }
 
-        .path-navigation {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .path-selector {
-            flex-grow: 1;
-            margin: 0 10px;
-            padding: 5px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
-
-        .path-nav-btn {
-            padding: 5px 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .path-nav-btn:hover {
-            background-color: #45a049;
-        }
-
-        .path-info {
-            margin-top: 10px;
-            padding: 10px;
-            background-color: #e9f7ef;
-            border-radius: 5px;
-            border-left: 4px solid #4CAF50;
-        }
-    </style>
 </head>
 <body>
 <h1>出租车数据分析系统</h1>
@@ -80,6 +37,8 @@
             <input type="text" id="taxiId" placeholder="请输入出租车ID">
             <button id="queryTrajectoryBtn">查询轨迹</button>
         </div>
+        <!-- 添加结果显示区域 -->
+        <div id="f1_result"></div>
     </div>
 
     <!-- F2: 地图缩放 (占位) -->
@@ -110,6 +69,8 @@
             <input type="text" id="f3_bottomRightLat" placeholder="纬度">
         </div>
         <button id="areaSearchBtn">区域查找</button>
+        <!-- 添加结果显示区域 -->
+        <div id="f3_result"></div>
     </div>
 
     <!-- F4: 区域车流密度分析 -->
@@ -146,6 +107,8 @@
             <button id="nextTimeSlot">下一个 &gt;</button>
         </div>
         <button id="densityAnalysisBtn">密度分析</button>
+        <!-- 添加结果显示区域 -->
+        <div id="f4_result"></div>
     </div>
 
     <!-- F5: 区域关联分析1 -->
