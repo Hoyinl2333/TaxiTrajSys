@@ -25,18 +25,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         resultDiv.innerHTML = '<p>正在进行频繁路径分析...</p>';
 
+        // 构建请求参数对象
+        const params = {
+            k: parseInt(k, 10), // 假设 k 需要是整数
+            minPathDistanceKM: parseFloat(minDistance) // 假设 minDistance 需要是浮点数
+        };
+
+        console.log('发送的请求体:', params); // 调试信息，查看发送的请求体
+
         // 构建请求URL
         const baseURL = window.location.hostname === 'localhost' ? 'http://localhost:8080' : '';
-        const apiUrl = `${baseURL}/paths/frequent/citywide`;
-        apiUrl.searchParams.append('k', k);
-        apiUrl.searchParams.append('minPathDistanceKM', minDistance);
+        const apiUrl = `${baseURL}/paths/frequent/citywide`; // POST 请求的 URL 通常不包含查询参数
 
-        // 发起GET请求
+        // 发起POST请求
         fetch(apiUrl, {
-            method: 'GET',
+            method: 'POST', // 将请求方法改为 POST
             headers: {
-                'Content-Type': 'application/json'
-            }
+                'Content-Type': 'application/json' // 设置请求头为 JSON
+            },
+            body: JSON.stringify(params) // 将参数对象转换为 JSON 字符串作为请求体
         })
         .then(response => {
             if (!response.ok) {
