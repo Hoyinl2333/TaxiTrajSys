@@ -1,7 +1,8 @@
 package com.codex.taxitrajectory.controller;
 
-import com.codex.taxitrajectory.model.query.RegionCorrelationQuery;
-import com.codex.taxitrajectory.model.query.RegionSingleCorrelationQuery;
+import com.codex.taxitrajectory.model.query.RegionQueryWrapper.RegionCorrelationQuery;
+import com.codex.taxitrajectory.model.query.RegionQueryWrapper.RegionSingleCorrelationQuery;
+import com.codex.taxitrajectory.model.result.RegionCorrelationResult;
 import com.codex.taxitrajectory.service.UnifiedRegionCorrelationService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,12 +23,12 @@ public class UnifiedRegionCorrelationController {
     }
 
     @PostMapping("/trafficFlowChangeBetweenRegions")
-    public Map<LocalDateTime, int[]> analyzeTrafficFlowChangeBetweenRegions(@RequestBody RegionCorrelationQuery query) {
+    public RegionCorrelationResult analyzeTrafficFlowChangeBetweenRegions(@RequestBody RegionCorrelationQuery query) {
         return unifiedRegionCorrelationService.analyzeTrafficFlowChangeBetweenRegions(query);
     }
 
     @PostMapping("/trafficFlowChangeWithOtherRegions")
-    public Map<LocalDateTime, int[]> analyzeTrafficFlowChangeWithOtherRegions(@RequestBody RegionSingleCorrelationQuery query) {
+    public RegionCorrelationResult analyzeTrafficFlowChangeWithOtherRegions(@RequestBody RegionSingleCorrelationQuery query) {
         return unifiedRegionCorrelationService.analyzeTrafficFlowChangeWithOtherRegions(query);
     }
 }

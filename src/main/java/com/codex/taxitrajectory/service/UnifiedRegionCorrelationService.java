@@ -1,8 +1,9 @@
 package com.codex.taxitrajectory.service;
 
 import com.codex.taxitrajectory.model.core.TaxiRecord;
-import com.codex.taxitrajectory.model.query.RegionCorrelationQuery;
-import com.codex.taxitrajectory.model.query.RegionSingleCorrelationQuery;
+import com.codex.taxitrajectory.model.query.RegionQueryWrapper.RegionCorrelationQuery;
+import com.codex.taxitrajectory.model.query.RegionQueryWrapper.RegionSingleCorrelationQuery;
+import com.codex.taxitrajectory.model.result.RegionCorrelationResult;
 import com.codex.taxitrajectory.repository.TaxiRepository;
 import com.codex.taxitrajectory.utils.GeoUtils;
 import org.slf4j.Logger;
@@ -35,9 +36,9 @@ public class UnifiedRegionCorrelationService {
     /**
      * 分析不同时间段内两个指定区域间的车流量变化
      * @param query 查询参数
-     * @return 每个时间槽内两个方向的车流量
+     * @return 封装了每个时间槽内两个方向车流量的结果对象
      */
-    public Map<LocalDateTime, int[]> analyzeTrafficFlowChangeBetweenRegions(RegionCorrelationQuery query) {
+    public RegionCorrelationResult analyzeTrafficFlowChangeBetweenRegions(RegionCorrelationQuery query) {
         if (loggingEnabled) {
             logger.info("开始分析两个区域间车流量变化，查询参数：{}", query);
         }
@@ -85,15 +86,17 @@ public class UnifiedRegionCorrelationService {
             logger.info("车流量分析完成，总耗时：{} ms", totalAnalysisTime);
         }
 
-        return flowChangeMap;
+        RegionCorrelationResult result = new RegionCorrelationResult();
+        result.setTrafficFlowChange(flowChangeMap);
+        return result;
     }
 
     /**
      * 分析指定矩形区域与其他区域的车流量随时间的变化
      * @param query 查询参数
-     * @return 每个时间槽内两个方向的车流量
+     * @return 封装了每个时间槽内两个方向车流量的结果对象
      */
-    public Map<LocalDateTime, int[]> analyzeTrafficFlowChangeWithOtherRegions(RegionSingleCorrelationQuery query) {
+    public RegionCorrelationResult analyzeTrafficFlowChangeWithOtherRegions(RegionSingleCorrelationQuery query) {
         if (loggingEnabled) {
             logger.info("开始分析指定区域与其他区域的车流量变化，查询参数：{}", query);
         }
@@ -137,7 +140,9 @@ public class UnifiedRegionCorrelationService {
             logger.info("车流量分析完成，总耗时：{} ms", totalAnalysisTime);
         }
 
-        return flowChangeMap;
+        RegionCorrelationResult result = new RegionCorrelationResult();
+        result.setTrafficFlowChange(flowChangeMap);
+        return result;
     }
 
     /**

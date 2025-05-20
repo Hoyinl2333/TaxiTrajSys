@@ -109,10 +109,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 return response.json()
             })
             .then((data) => {
-                if (data && Object.keys(data).length > 0) {
+                if (data && data.trafficFlowChange && Object.keys(data.trafficFlowChange).length > 0) {
                     // 保存数据到全局变量
-                    timeData = data
-                    timePoints = Object.keys(data).sort()
+                    timeData = data.trafficFlowChange;
+                    timePoints = Object.keys(data.trafficFlowChange).sort()
                     currentTimeIndex = 0
 
                     // 显示第一个时间点的数据
