@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // 存储 f6 模块创建的覆盖物（代码2新增）
+    // 存储 f6 模块创建的覆盖物
     window.f6Overlays = [];
 
     let timeData = {}; // 存储时间点和对应的车流量数据
@@ -73,14 +73,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            // 清除之前的覆盖物（代码2新增）
+            // 清除之前的覆盖物
             clearF6Overlays();
 
             performAreaCorrelationAnalysis2(startTime, endTime, topLeftLng, topLeftLat, bottomRightLng, bottomRightLat);
         });
     }
 
-    // 清除 f6 模块创建的覆盖物（代码2新增）
+    // 清除 f6 模块创建的覆盖物
     window.clearF6Overlays = () => {
         if (window.f6Overlays && Array.isArray(window.f6Overlays)) {
             window.f6Overlays.forEach((overlay) => {
@@ -109,9 +109,9 @@ document.addEventListener("DOMContentLoaded", () => {
             bottomRightLatitude: Number.parseFloat(bottomRightLat),
             timeSlotMinutes: Number.parseInt(document.getElementById("f6_timeInterval").value),
         };
-        // 注意接口路径差异：代码1为/correlation/，代码2为/SingleCorrelation/，需根据实际后端调整
+
         const baseURL = window.location.hostname === "localhost" ? "http://localhost:8080" : "";
-        const apiUrl = `${baseURL}/correlation/trafficFlowChangeWithOtherRegions`; // 保持代码1的路径（需确认实际接口）
+        const apiUrl = `${baseURL}/correlation/trafficFlowChangeWithOtherRegions`;
 
         fetch(apiUrl, {
             method: "POST",
@@ -127,8 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return response.json();
             })
             .then((data) => {
-                // 兼容数据结构差异：代码1使用data.trafficFlowChange，代码2直接使用data
-                const trafficData = data.trafficFlowChange || data; // 自动兼容两种结构
+                const trafficData = data.trafficFlowChange || data;
                 if (trafficData && Object.keys(trafficData).length > 0) {
                     timeData = trafficData;
                     timePoints = Object.keys(trafficData).sort();
@@ -158,12 +157,16 @@ document.addEventListener("DOMContentLoaded", () => {
     function drawAreaOnMap(topLeftLng, topLeftLat, bottomRightLng, bottomRightLat, color) {
         try {
             const topLeftPoint = new BMapGL.Point(Number.parseFloat(topLeftLng), Number.parseFloat(topLeftLat));
-            const bottomRightPoint = new BMapGL.Point(Number.parseFloat(bottomRightLng), Number.parseFloat(topLeftLat));
+
+            const bottomRightPoint = new BMapGL.Point(Number.parseFloat(bottomRightLng), Number.parseFloat(bottomRightLat));
+
             const rectangle = new BMapGL.Polygon(
                 [
                     topLeftPoint,
+                    // 右上角点：使用右下角经度和左上角纬度
                     new BMapGL.Point(Number.parseFloat(bottomRightLng), Number.parseFloat(topLeftLat)),
                     bottomRightPoint,
+                    // 左下角点：使用左上角经度和右下角纬度
                     new BMapGL.Point(Number.parseFloat(topLeftLng), Number.parseFloat(bottomRightLat)),
                 ],
                 {
@@ -174,17 +177,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     fillOpacity: 0.2,
                 }
             );
+
             if (map && map.addOverlay) {
                 map.addOverlay(rectangle);
             }
-            // 新增：存储覆盖物以便清除（代码2功能）
+
             window.f6Overlays.push(rectangle);
         } catch (error) {
             console.error("绘制区域时出错:", error);
         }
     }
 
-    // 代码2新增：检查地图对象是否初始化
     if (typeof map === "undefined") {
         console.warn("map 未定义，请确保已加载百度地图 API");
     }
