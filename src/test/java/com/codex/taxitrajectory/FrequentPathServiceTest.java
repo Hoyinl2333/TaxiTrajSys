@@ -56,7 +56,7 @@ class FrequentPathServiceTest {
 
         // 1. 定义查询参数
         int k = 10; // 获取 Top 10 频繁路径
-        double minDistanceKM = 2; // 路径的最小地理距离为 2 千米
+        double minDistanceKM = 1; // 路径的最小地理距离为 1 千米
         FrequentPathQuery query = new FrequentPathQuery(k, minDistanceKM);
         logger.info("测试查询参数 (F7 - 全市范围): {}", query);
         logMemoryUsage("F7 分析前"); // 记录分析开始前的内存使用情况
