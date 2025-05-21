@@ -1,4 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // 存储 f5 模块创建的覆盖物（代码2新增功能）
+    window.f5Overlays = []
+
     let timeData = {} // 存储时间点和对应的车流量数据
     let timePoints = [] // 存储所有时间点
     let currentTimeIndex = 0 // 当前时间点索引
@@ -86,6 +89,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 return
             }
 
+            // 清除之前的覆盖物（代码2新增逻辑）
+            clearF5Overlays()
+
             performAreaCorrelationAnalysis1(
                 startTime,
                 endTime,
@@ -99,6 +105,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 area2BottomRightLat,
             )
         })
+    }
+
+    // 清除 f5 模块创建的覆盖物（代码2新增函数）
+    window.clearF5Overlays = () => {
+        if (window.f5Overlays && Array.isArray(window.f5Overlays)) {
+            window.f5Overlays.forEach((overlay) => {
+                if (map && map.removeOverlay) {
+                    map.removeOverlay(overlay)
+                }
+            })
+            window.f5Overlays = []
+        }
     }
 
     function performAreaCorrelationAnalysis1(
@@ -133,8 +151,9 @@ document.addEventListener("DOMContentLoaded", () => {
             bottomRightLongitude2: Number.parseFloat(a2BRLng),
             bottomRightLatitude2: Number.parseFloat(a2BRLat),
         }
+        // 注意这里的路径大小写差异：代码1是/correlation/，代码2是/Correlation/，需根据后端接口实际情况统一
         const baseURL = window.location.hostname === 'localhost' ? 'http://localhost:8080' : '';
-        const apiUrl = `${baseURL}/correlation/trafficFlowChangeBetweenRegions`;
+        const apiUrl = `${baseURL}/correlation/trafficFlowChangeBetweenRegions`; // 保持和代码1一致的小写路径
 
         fetch(apiUrl, {
             method: "POST",
@@ -150,9 +169,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 return response.json()
             })
             .then((data) => {
+                // 合并时注意数据结构差异：
+                // 代码1中 data.trafficFlowChange 存储数据，代码2直接使用 data
+                // 需确认后端返回结构，这里假设以代码1的结构为准
                 if (data && data.trafficFlowChange && Object.keys(data.trafficFlowChange).length > 0) {
                     // 保存数据到全局变量
-                    timeData = data.trafficFlowChange;
+                    timeData = data.trafficFlowChange; // 保持代码1的数据结构
                     timePoints = Object.keys(data.trafficFlowChange).sort()
                     currentTimeIndex = 0
 
@@ -184,7 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function drawAreaOnMap(topLeftLng, topLeftLat, bottomRightLng, bottomRightLat, color) {
         try {
             const topLeftPoint = new BMapGL.Point(Number.parseFloat(topLeftLng), Number.parseFloat(topLeftLat))
-            const bottomRightPoint = new BMapGL.Point(Number.parseFloat(bottomRightLng), Number.parseFloat(bottomRightLat))
+            const bottomRightPoint = new BMapGL.Point(Number.parseFloat(bottomRightLng), Number.parseFloat(topLeftLat))
             const rectangle = new BMapGL.Polygon(
                 [
                     topLeftPoint,
@@ -201,6 +223,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 },
             )
             map.addOverlay(rectangle)
+
+            // 新增：将覆盖物添加到全局数组以便后续清除（代码2的改进）
+            window.f5Overlays.push(rectangle)
         } catch (error) {
             console.error("绘制区域时出错:", error)
         }
