@@ -6,8 +6,8 @@
 // 全局变量存储路径数据
 let f8PathFrequenciesData = [];
 let f8CurrentPathIndex = 0;
-let f8PathPolylines = []; // 存储路径折线对象
-let f8AreaRectangles = []; // 存储区域矩形覆盖物
+window.f8PathPolylines = []; // 存储路径折线对象，暴露到全局作用域
+window.f8AreaRectangles = []; // 存储区域矩形覆盖物，暴露到全局作用域
 
 document.addEventListener("DOMContentLoaded", () => {
     const frequentPath2Btn = document.getElementById("frequentPath2Btn");
@@ -48,11 +48,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // 清除之前的覆盖物
-            clearF8PathPolylines();
-            clearF8AreaRectangles();
+            clearF8Overlays();
 
             // 绘制区域A和区域B的矩形
-            drawAreaRectangles(
+            drawF8AreaRectangles(
                 areaATopLeftLng,
                 areaATopLeftLat,
                 areaABottomRightLng,
@@ -60,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 areaBTopLeftLng,
                 areaBTopLeftLat,
                 areaBBottomRightLng,
-                areaBBottomRightLat,
+                areaBBottomRightLat
             );
 
             // 调用后端接口
@@ -73,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 areaBTopLeftLng,
                 areaBTopLeftLat,
                 areaBBottomRightLng,
-                areaBBottomRightLat,
+                areaBBottomRightLat
             );
         });
     }
@@ -116,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // 绘制区域A和区域B的矩形
-function drawAreaRectangles(
+function drawF8AreaRectangles(
     areaATopLeftLng,
     areaATopLeftLat,
     areaABottomRightLng,
@@ -124,81 +123,95 @@ function drawAreaRectangles(
     areaBTopLeftLng,
     areaBTopLeftLat,
     areaBBottomRightLng,
-    areaBBottomRightLat,
+    areaBBottomRightLat
 ) {
+    // 清除之前的区域矩形
+    if (window.f8AreaRectangles && window.f8AreaRectangles.length > 0) {
+        window.f8AreaRectangles.forEach(overlay => {
+            map.removeOverlay(overlay);
+        });
+        window.f8AreaRectangles = [];
+    }
+
     // 创建区域A的矩形
-    const areaATopLeft = new BMapGL.Point(Number.parseFloat(areaATopLeftLng), Number.parseFloat(areaATopLeftLat));
-    const areaABottomRight = new BMapGL.Point(
-        Number.parseFloat(areaABottomRightLng),
-        Number.parseFloat(areaABottomRightLat),
-    );
-    const areaAPolygon = createRectangle(areaATopLeft, areaABottomRight, "rgba(255, 0, 0, 0.3)", "区域A");
-
-    // 创建区域B的矩形
-    const areaBTopLeft = new BMapGL.Point(Number.parseFloat(areaBTopLeftLng), Number.parseFloat(areaBTopLeftLat));
-    const areaBBottomRight = new BMapGL.Point(
-        Number.parseFloat(areaBBottomRightLng),
-        Number.parseFloat(areaBBottomRightLat),
-    );
-    const areaBPolygon = createRectangle(areaBTopLeft, areaBBottomRight, "rgba(0, 0, 255, 0.3)", "区域B");
-
-    // 存储矩形覆盖物以便后续清除
-    f8AreaRectangles.push(areaAPolygon, areaBPolygon);
-
-    // 调整地图视野以包含两个区域
-    const bounds = new BMapGL.Bounds(
-        new BMapGL.Point(
-            Math.min(Number.parseFloat(areaATopLeftLng), Number.parseFloat(areaBTopLeftLng)),
-            Math.min(Number.parseFloat(areaABottomRightLat), Number.parseFloat(areaBBottomRightLat)),
-        ),
-        new BMapGL.Point(
-            Math.max(Number.parseFloat(areaABottomRightLng), Number.parseFloat(areaBBottomRightLng)),
-            Math.max(Number.parseFloat(areaATopLeftLat), Number.parseFloat(areaBTopLeftLat)),
-        ),
-    );
-    map.setViewport(bounds);
-}
-
-// 创建矩形覆盖物
-function createRectangle(topLeft, bottomRight, fillColor, label) {
-    const points = [
-        topLeft,
-        new BMapGL.Point(bottomRight.lng, topLeft.lat),
-        bottomRight,
-        new BMapGL.Point(topLeft.lng, bottomRight.lat),
+    const areaAPoints = [
+        new BMapGL.Point(Number.parseFloat(areaATopLeftLng), Number.parseFloat(areaATopLeftLat)),
+        new BMapGL.Point(Number.parseFloat(areaABottomRightLng), Number.parseFloat(areaATopLeftLat)),
+        new BMapGL.Point(Number.parseFloat(areaABottomRightLng), Number.parseFloat(areaABottomRightLat)),
+        new BMapGL.Point(Number.parseFloat(areaATopLeftLng), Number.parseFloat(areaABottomRightLat))
     ];
 
-    const polygon = new BMapGL.Polygon(points, {
-        strokeColor: "#000",
+    const areaAPolygon = new BMapGL.Polygon(areaAPoints, {
+        strokeColor: "#FF0000",
         strokeWeight: 2,
         strokeOpacity: 1,
-        fillColor: fillColor,
-        fillOpacity: 0.5,
+        fillColor: "#FF0000",
+        fillOpacity: 0.3
     });
+    map.addOverlay(areaAPolygon);
+    window.f8AreaRectangles.push(areaAPolygon);
 
-    map.addOverlay(polygon);
-
-    // 添加标签
-    const labelPoint = new BMapGL.Point((topLeft.lng + bottomRight.lng) / 2, (topLeft.lat + bottomRight.lat) / 2);
-
-    const labelOpts = {
-        position: labelPoint,
-        offset: new BMapGL.Size(0, 0),
-    };
-
-    const labelMarker = new BMapGL.Label(label, labelOpts);
-    labelMarker.setStyle({
+    // 添加区域A标签
+    const areaALabel = new BMapGL.Label("区域A", {
+        position: new BMapGL.Point(
+            (Number.parseFloat(areaATopLeftLng) + Number.parseFloat(areaABottomRightLng)) / 2,
+            (Number.parseFloat(areaATopLeftLat) + Number.parseFloat(areaABottomRightLat)) / 2
+        ),
+        offset: new BMapGL.Size(0, 0)
+    });
+    areaALabel.setStyle({
         color: "#fff",
-        backgroundColor: fillColor.replace("0.3", "0.8"),
+        backgroundColor: "rgba(255, 0, 0, 0.8)",
         border: "none",
         fontSize: "14px",
         padding: "5px 10px",
-        borderRadius: "3px",
+        borderRadius: "3px"
     });
+    map.addOverlay(areaALabel);
+    window.f8AreaRectangles.push(areaALabel);
 
-    map.addOverlay(labelMarker);
+    // 创建区域B的矩形
+    const areaBPoints = [
+        new BMapGL.Point(Number.parseFloat(areaBTopLeftLng), Number.parseFloat(areaBTopLeftLat)),
+        new BMapGL.Point(Number.parseFloat(areaBBottomRightLng), Number.parseFloat(areaBTopLeftLat)),
+        new BMapGL.Point(Number.parseFloat(areaBBottomRightLng), Number.parseFloat(areaBBottomRightLat)),
+        new BMapGL.Point(Number.parseFloat(areaBTopLeftLng), Number.parseFloat(areaBBottomRightLat))
+    ];
 
-    return [polygon, labelMarker];
+    const areaBPolygon = new BMapGL.Polygon(areaBPoints, {
+        strokeColor: "#0000FF",
+        strokeWeight: 2,
+        strokeOpacity: 1,
+        fillColor: "#0000FF",
+        fillOpacity: 0.3
+    });
+    map.addOverlay(areaBPolygon);
+    window.f8AreaRectangles.push(areaBPolygon);
+
+    // 添加区域B标签
+    const areaBLabel = new BMapGL.Label("区域B", {
+        position: new BMapGL.Point(
+            (Number.parseFloat(areaBTopLeftLng) + Number.parseFloat(areaBBottomRightLng)) / 2,
+            (Number.parseFloat(areaBTopLeftLat) + Number.parseFloat(areaBBottomRightLat)) / 2
+        ),
+        offset: new BMapGL.Size(0, 0)
+    });
+    areaBLabel.setStyle({
+        color: "#fff",
+        backgroundColor: "rgba(0, 0, 255, 0.8)",
+        border: "none",
+        fontSize: "14px",
+        padding: "5px 10px",
+        borderRadius: "3px"
+    });
+    map.addOverlay(areaBLabel);
+    window.f8AreaRectangles.push(areaBLabel);
+
+    // 调整地图视野以包含两个区域
+    const allPoints = [...areaAPoints, ...areaBPoints];
+    map.setViewport(allPoints);
+
+    console.log("已绘制区域矩形，共", window.f8AreaRectangles.length, "个覆盖物");
 }
 
 function performFrequentPathAnalysis2(
@@ -210,7 +223,7 @@ function performFrequentPathAnalysis2(
     areaBTopLeftLng,
     areaBTopLeftLat,
     areaBBottomRightLng,
-    areaBBottomRightLat,
+    areaBBottomRightLat
 ) {
     const resultDiv = document.getElementById("f8_result");
     const pathSelectorContainer = document.getElementById("f8PathSelectorContainer");
@@ -237,14 +250,14 @@ function performFrequentPathAnalysis2(
             minLat: Number.parseFloat(areaABottomRightLat),
             maxLat: Number.parseFloat(areaATopLeftLat),
             minLon: Number.parseFloat(areaATopLeftLng),
-            maxLon: Number.parseFloat(areaABottomRightLng),
+            maxLon: Number.parseFloat(areaABottomRightLng)
         },
         regionB: {
             minLat: Number.parseFloat(areaBBottomRightLat),
             maxLat: Number.parseFloat(areaBTopLeftLat),
             minLon: Number.parseFloat(areaBTopLeftLng),
-            maxLon: Number.parseFloat(areaBBottomRightLng),
-        },
+            maxLon: Number.parseFloat(areaBBottomRightLng)
+        }
     };
 
     console.log("发送的请求体:", params); // 调试信息，查看发送的请求体
@@ -257,9 +270,9 @@ function performFrequentPathAnalysis2(
     fetch(apiUrl, {
         method: "POST",
         headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
         },
-        body: JSON.stringify(params),
+        body: JSON.stringify(params)
     })
         .then((response) => {
             if (!response.ok) {
@@ -340,24 +353,27 @@ function displayF8PathOnMap(pathIndex) {
             const polyline = new BMapGL.Polyline(data.points, {
                 strokeColor: getF8PathColor(pathIndex),
                 strokeWeight: 5,
-                strokeOpacity: 0.8,
+                strokeOpacity: 0.8
             });
 
             // 添加到地图
             map.addOverlay(polyline);
-            f8PathPolylines.push(polyline);
+            window.f8PathPolylines.push(polyline);
 
             // 添加起点和终点标记
             if (data.points.length > 0) {
                 // 添加起点 - 绿色
-                addDotToMap(data.points[0], "green");
+                const startDot = addDotToMap(data.points[0], "green");
+                window.f8PathPolylines.push(startDot);
 
                 // 添加终点 - 红色
-                addDotToMap(data.points[data.points.length - 1], "red");
+                const endDot = addDotToMap(data.points[data.points.length - 1], "red");
+                window.f8PathPolylines.push(endDot);
 
                 // 添加路径点 - 蓝色
                 for (let i = 1; i < data.points.length - 1; i++) {
-                    addDotToMap(data.points[i], "blue");
+                    const dot = addDotToMap(data.points[i], "blue");
+                    window.f8PathPolylines.push(dot);
                 }
             }
         }
@@ -369,30 +385,60 @@ function updateF8PathDetails(pathIndex) {
     if (!pathDetails || !f8PathFrequenciesData || pathIndex >= f8PathFrequenciesData.length) return;
 
     const pathData = f8PathFrequenciesData[pathIndex];
+
+    let detailsHtml = `<h4>路径 ${pathIndex + 1} 详情 (频率: ${pathData.frequency})</h4>`;
+    detailsHtml += '<div class="path-details">';
+
+    pathData.pathCoordinates.forEach((coord, idx) => {
+        detailsHtml += `
+            <div class="path-detail-item">
+                <span class="path-detail-label">点 ${idx + 1}:</span>
+                <span>经度: ${coord.longitude.toFixed(6)}, 纬度: ${coord.latitude.toFixed(6)}</span>
+            </div>
+        `;
+    });
+
+    detailsHtml += "</div>";
+    pathDetails.innerHTML = detailsHtml;
 }
 
+// 清除F8功能的所有覆盖物
+window.clearF8Overlays = function() {
+    console.log("清除F8所有覆盖物");
+
+    // 清除区域矩形和标记
+    if (window.f8AreaRectangles && Array.isArray(window.f8AreaRectangles)) {
+        window.f8AreaRectangles.forEach((overlay) => {
+            if (map && map.removeOverlay) {
+                map.removeOverlay(overlay);
+            }
+        });
+        window.f8AreaRectangles = [];
+    }
+
+    // 清除路径折线
+    clearF8PathPolylines();
+};
+
+// 清除路径，保留区域矩形
 function clearF8PathPolylines() {
     // 清除之前的路径折线
-    f8PathPolylines.forEach((overlay) => {
-        map.removeOverlay(overlay);
-    });
-    f8PathPolylines = [];
+    if (window.f8PathPolylines && Array.isArray(window.f8PathPolylines)) {
+        window.f8PathPolylines.forEach((overlay) => {
+            if (map && map.removeOverlay) {
+                map.removeOverlay(overlay);
+            }
+        });
+        window.f8PathPolylines = [];
 
-    // 使用全局清除函数，但不清除区域矩形
-    if (typeof clearOverlays === "function") {
-        clearOverlays();
+        // 清除添加的点
+          for (let i = 0; i < overlays.length; i++) {
+            if (map && map.removeOverlay && overlays[i]) {
+              map.removeOverlay(overlays[i])
+            }
+          }
+          overlays = []
     }
-}
-
-function clearF8AreaRectangles() {
-    f8AreaRectangles.forEach((rectangle) => {
-        if (Array.isArray(rectangle)) {
-            rectangle.forEach((overlay) => map.removeOverlay(overlay));
-        } else {
-            map.removeOverlay(rectangle);
-        }
-    });
-    f8AreaRectangles = [];
 }
 
 function getF8PathColor(index) {
@@ -411,4 +457,24 @@ function getF8PathColor(index) {
     ];
 
     return colors[index % colors.length];
+}
+
+// 修改map-utils.js中的clearOverlays函数，确保它能清除f8的覆盖物
+// 这个函数会在原始的clearOverlays函数中被调用
+if (typeof window.originalClearOverlays !== 'function') {
+    // 保存原始的clearOverlays函数
+    window.originalClearOverlays = window.clearOverlays;
+
+    // 重写clearOverlays函数
+    window.clearOverlays = function() {
+        // 调用原始的clearOverlays函数
+        if (typeof window.originalClearOverlays === 'function') {
+            window.originalClearOverlays();
+        }
+
+        // 确保清除f8的覆盖物
+        if (typeof window.clearF8Overlays === 'function') {
+            window.clearF8Overlays();
+        }
+    };
 }
