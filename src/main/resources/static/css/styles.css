@@ -257,7 +257,7 @@
     }
 
     /* 结果显示区域样式 */
-    #f1_result, #f3_result, #f4_result, #f5_result, #f6_result, #f5_flow_display, #f6_flow_display, #f9_result {
+    #f1_result, #f3_result, #f4_result, #f5_result, #f6_result, #f5_flow_display, #f6_flow_display, #f7_result, #f8_result, #f9_result {
         margin-top: 10px;
         padding: 10px;
         background-color: #f0f8ff;

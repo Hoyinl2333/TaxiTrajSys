@@ -169,7 +169,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 return response.json()
             })
             .then((data) => {
-
                 if (data && data.trafficFlowChange && Object.keys(data.trafficFlowChange).length > 0) {
                     // 保存数据到全局变量
                     timeData = data.trafficFlowChange;
@@ -191,8 +190,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 if (typeof map !== "undefined" && map !== null) {
-                    drawAreaOnMap(a1TLLng, a1TLLat, a1BRLng, a1BRLat, "blue")
-                    drawAreaOnMap(a2TLLng, a2TLLat, a2BRLng, a2BRLat, "red")
+                    drawAreaOnMap(a1TLLng, a1TLLat, a1BRLng, a1BRLat, "blue", "区域1")
+                    drawAreaOnMap(a2TLLng, a2TLLat, a2BRLng, a2BRLat, "red", "区域2")
                 }
             })
             .catch((error) => {
@@ -201,10 +200,13 @@ document.addEventListener("DOMContentLoaded", () => {
             })
     }
 
-    function drawAreaOnMap(topLeftLng, topLeftLat, bottomRightLng, bottomRightLat, color) {
+    // 修改后的绘制区域函数，增加区域标签
+    function drawAreaOnMap(topLeftLng, topLeftLat, bottomRightLng, bottomRightLat, color, labelText) {
         try {
             const topLeftPoint = new BMapGL.Point(Number.parseFloat(topLeftLng), Number.parseFloat(topLeftLat))
             const bottomRightPoint = new BMapGL.Point(Number.parseFloat(bottomRightLng), Number.parseFloat(bottomRightLat));
+
+            // 创建矩形
             const rectangle = new BMapGL.Polygon(
                 [
                     topLeftPoint,
@@ -222,8 +224,26 @@ document.addEventListener("DOMContentLoaded", () => {
             )
             map.addOverlay(rectangle)
 
-            // 新增：将覆盖物添加到全局数组以便后续清除
-            window.f5Overlays.push(rectangle)
+            // 添加区域标签
+            const label = new BMapGL.Label(labelText, {
+                position: new BMapGL.Point(
+                    (Number.parseFloat(topLeftLng) + Number.parseFloat(bottomRightLng)) / 2,
+                    (Number.parseFloat(topLeftLat) + Number.parseFloat(bottomRightLat)) / 2
+                ),
+                offset: new BMapGL.Size(0, 0),
+            })
+            label.setStyle({
+                color: "#fff",
+                backgroundColor: `rgba(${color === "blue" ? "0,0,255" : "255,0,0"}, 0.8)`,
+                border: "none",
+                fontSize: "14px",
+                padding: "5px 10px",
+                borderRadius: "3px",
+            })
+            map.addOverlay(label)
+
+            // 将覆盖物添加到全局数组以便后续清除
+            window.f5Overlays.push(rectangle, label)
         } catch (error) {
             console.error("绘制区域时出错:", error)
         }
