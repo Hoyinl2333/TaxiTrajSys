@@ -386,7 +386,8 @@ function updateF8PathDetails(pathIndex) {
 
     const pathData = f8PathFrequenciesData[pathIndex];
 
-    let detailsHtml = `<h4>路径 ${pathIndex + 1} 详情 (频率: ${pathData.frequency})</h4>`;
+    // 显示路径详情
+    /*let detailsHtml = `<h4>路径 ${pathIndex + 1} 详情 (频率: ${pathData.frequency})</h4>`;
     detailsHtml += '<div class="path-details">';
 
     pathData.pathCoordinates.forEach((coord, idx) => {
@@ -399,7 +400,9 @@ function updateF8PathDetails(pathIndex) {
     });
 
     detailsHtml += "</div>";
-    pathDetails.innerHTML = detailsHtml;
+    pathDetails.innerHTML = detailsHtml;*/
+    // 显示路径详情
+
 }
 
 // 清除F8功能的所有覆盖物
