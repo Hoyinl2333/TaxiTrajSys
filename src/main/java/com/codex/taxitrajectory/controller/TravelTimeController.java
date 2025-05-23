@@ -4,6 +4,7 @@ import com.codex.taxitrajectory.model.query.TravelTimeQuery;
 // 导入你重命名后的 TravelTimeResult 类
 import com.codex.taxitrajectory.model.result.TravelTimeResult;
 import com.codex.taxitrajectory.service.TravelTimeService;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +43,7 @@ public class TravelTimeController {
      * @return ResponseEntity 包含分析结果 TravelTimeResult 或错误信息
      */
     @PostMapping("/analyze")
-    public ResponseEntity<?> analyzeTravelTime(@RequestBody TravelTimeQuery query) {
+    public ResponseEntity<?> analyzeTravelTime(@RequestBody @Valid TravelTimeQuery query) {
         log.info("=============================");
         log.info("收到通行时间分析请求: {}", query);
 

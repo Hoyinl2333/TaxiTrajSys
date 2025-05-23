@@ -61,8 +61,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (areaCorrelation1Btn) {
         areaCorrelation1Btn.addEventListener("click", () => {
-            const startTime = new Date(document.getElementById("f5_startTime").value).toISOString()
-            const endTime = new Date(document.getElementById("f5_endTime").value).toISOString()
+            const startTime = document.getElementById("f5_startTime").value
+            const endTime = document.getElementById("f5_endTime").value
             const area1TopLeftLng = document.getElementById("f5_area1_topLeftLng").value
             const area1TopLeftLat = document.getElementById("f5_area1_topLeftLat").value
             const area1BottomRightLng = document.getElementById("f5_area1_bottomRightLng").value
@@ -91,6 +91,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // 清除之前的覆盖物
             clearF5Overlays()
+
+            // 绘制区域
+            if (window.map) { // 确保全局 map 对象存在
+                drawAreaOnMap(
+                    area1TopLeftLng,
+                    area1TopLeftLat,
+                    area1BottomRightLng,
+                    area1BottomRightLat,
+                    "blue", // 区域1的颜色
+                    "区域1"  // 区域1的标签
+                );
+
+                drawAreaOnMap(
+                    area2TopLeftLng,
+                    area2TopLeftLat,
+                    area2BottomRightLng,
+                    area2BottomRightLat,
+                    "red",  // 区域2的颜色
+                    "区域2" // 区域2的标签
+                );
+            }
+
+            // （可选）调整地图视野以适应绘制的区域
+            const pointsToView = [
+                new BMapGL.Point(area1TopLeftLng, area1BottomRightLat),
+                new BMapGL.Point(area1BottomRightLng, area1TopLeftLat),
+                new BMapGL.Point(area2TopLeftLng, area2BottomRightLat),
+                new BMapGL.Point(area2BottomRightLng, area2TopLeftLat),
+            ];
+            map.setViewport(pointsToView, {margins:[30,30,30,30]});
 
             performAreaCorrelationAnalysis1(
                 startTime,
@@ -131,29 +161,36 @@ document.addEventListener("DOMContentLoaded", () => {
         a2BRLng,
         a2BRLat,
     ) {
-        const resultDiv = document.getElementById("f5_result")
+        const resultDiv = document.getElementById("f5_result");
         if (!resultDiv) {
-            console.error("未找到 f5_result 元素")
-            return
+            console.error("未找到 f5_result 元素");
+            return;
         }
-        resultDiv.innerHTML = "<p>正在进行区域关联分析...</p>"
+        resultDiv.innerHTML = "<p>正在进行区域关联分析...</p>";
 
         const params = {
-            startTime,
-            endTime,
+            startTime: startTime, // 直接使用传入的ISO格式startTime
+            endTime: endTime,     // 直接使用传入的ISO格式endTime
             timeSlotMinutes: Number.parseInt(document.getElementById("f5_timeInterval").value),
-            topLeftLongitude1: Number.parseFloat(a1TLLng),
-            topLeftLatitude1: Number.parseFloat(a1TLLat),
-            bottomRightLongitude1: Number.parseFloat(a1BRLng),
-            bottomRightLatitude1: Number.parseFloat(a1BRLat),
-            topLeftLongitude2: Number.parseFloat(a2TLLng),
-            topLeftLatitude2: Number.parseFloat(a2TLLat),
-            bottomRightLongitude2: Number.parseFloat(a2BRLng),
-            bottomRightLatitude2: Number.parseFloat(a2BRLat),
-        }
+            region1: {
+                minLon: Number.parseFloat(a1TLLng), // 使用传入的参数构建
+                maxLat: Number.parseFloat(a1TLLat),
+                maxLon: Number.parseFloat(a1BRLng),
+                minLat: Number.parseFloat(a1BRLat)
+            },
+            region2: {
+                minLon: Number.parseFloat(a2TLLng),
+                maxLat: Number.parseFloat(a2TLLat),
+                maxLon: Number.parseFloat(a2BRLng),
+                minLat: Number.parseFloat(a2BRLat)
+            }
+        };
+        // 调试：打印将要发送的参数
+        console.log("发送给F5后端的参数:", JSON.stringify(params, null, 2));
+
 
         const baseURL = window.location.hostname === 'localhost' ? 'http://localhost:8080' : '';
-        const apiUrl = `${baseURL}/correlation/trafficFlowChangeBetweenRegions`; // 保持和代码1一致的小写路径
+        const apiUrl = `${baseURL}/correlation/trafficFlowChangeBetweenRegions`;
 
         fetch(apiUrl, {
             method: "POST",
@@ -162,42 +199,89 @@ document.addEventListener("DOMContentLoaded", () => {
             },
             body: JSON.stringify(params),
         })
-            .then((response) => {
+            .then(async (response) => { // 使用 async 关键字，以便在内部使用 await
+                //console.log("F5 响应状态:", response.status, "OK状态:", response.ok); // 调试日志
                 if (!response.ok) {
-                    throw new Error(`网络响应异常，状态码: ${response.status}`)
+                    let errorData;
+                    let responseTextForDebug = "";
+                    try {
+                        // 克隆响应对象，因为 .json() 或 .text() 会消耗响应体
+                        const clonedResponse = response.clone();
+                        errorData = await response.json(); // 尝试异步解析JSON
+                        console.log("F5 成功解析后端错误JSON:", errorData); // 调试日志
+                    } catch (e) {
+                        console.warn("F5 解析后端错误响应为JSON失败:", e);
+                        // 如果JSON解析失败，尝试获取文本响应作为调试信息
+                        try {
+                            // 使用之前克隆的响应对象来读取文本
+                            responseTextForDebug = await clonedResponse.text();
+                            console.warn("F5 后端返回的原始文本内容:", responseTextForDebug);
+                        } catch (textError) {
+                            console.error("F5 读取错误响应的文本内容也失败:", textError);
+                        }
+                        errorData = null;
+                    }
+
+                    // 构建错误消息
+                    let errorMessage = `网络响应异常，状态码: ${response.status}`;
+                    if (errorData && errorData.details && errorData.details.length > 0) {
+                        const detailsHtml = errorData.details.map(detail => `<li>${escapeHtml(detail)}</li>`).join('');
+                        errorMessage += `<br/>详情如下:<ul>${detailsHtml}</ul>`;
+                    } else if (errorData && errorData.message) {
+                        errorMessage += `<br/>服务器消息: ${escapeHtml(errorData.message)}`;
+                    } else if (responseTextForDebug) {
+                        errorMessage += `<br/>服务器原始响应 (部分): ${escapeHtml(responseTextForDebug.substring(0, 200))}`; // 显示部分原始响应
+                    } else {
+                        errorMessage += `。无法获取详细错误信息。`;
+                    }
+
+                    // 创建一个Error对象并抛出，它将被下面的 .catch 捕获
+                    const customError = new Error(errorMessage);
+                    if (errorData) customError.errorData = errorData; // 可选: 将解析出的错误数据附加到Error对象
+                    throw customError;
                 }
-                return response.json()
+                return response.json(); // 如果 response.ok 为 true，正常解析业务数据
             })
-            .then((data) => {
-                if (data && data.trafficFlowChange && Object.keys(data.trafficFlowChange).length > 0) {
-                    // 保存数据到全局变量
-                    timeData = data.trafficFlowChange;
-                    timePoints = Object.keys(data.trafficFlowChange).sort()
-                    currentTimeIndex = 0
+            .then((data) => { // 此 .then 只处理成功的业务响应
+                const resultDiv = document.getElementById("f5_result");
+                if (resultDiv) { // 确保元素存在
+                    if (data && data.trafficFlowChange && Object.keys(data.trafficFlowChange).length > 0) {
+                        timeData = data.trafficFlowChange;
+                        timePoints = Object.keys(data.trafficFlowChange).sort();
+                        currentTimeIndex = 0;
+                        updateFlowDisplay();
 
-                    // 显示第一个时间点的数据
-                    updateFlowDisplay()
+                        let resultHtml = "<p>区域关联分析结果：</p>";
+                        resultHtml +=
+                            "<p>已获取到 " +
+                            timePoints.length +
+                            " 个时间点的车流量数据。请使用上方的时间选择器浏览不同时间点的数据。</p>";
+                        resultDiv.innerHTML = resultHtml;
+                    } else {
+                        resultDiv.innerHTML = "<p>未获取到有效的分析结果。</p>";
+                        document.getElementById("f5_flow_display").style.display = "none";
+                    }
+                }
+            })
+            .catch((error) => { // 此 .catch 捕获所有前面Promise链中抛出的错误
+                const resultDiv = document.getElementById("f5_result");
+                let displayMessage = "查询出错：";
 
-                    let resultHtml = "<p>区域关联分析结果：</p>"
-                    resultHtml +=
-                        "<p>已获取到 " +
-                        timePoints.length +
-                        " 个时间点的车流量数据。请使用上方的时间选择器浏览不同时间点的数据。</p>"
-                    resultDiv.innerHTML = resultHtml
+                if (error && error.message) {
+                    displayMessage += `<br/>${error.message}`; // error.message 现在应包含我们构造的详细信息
                 } else {
-                    resultDiv.innerHTML = "<p>未获取到有效的分析结果。</p>"
-                    document.getElementById("f5_flow_display").style.display = "none"
+                    displayMessage += "<br/>发生未知错误。";
                 }
 
-                if (typeof map !== "undefined" && map !== null) {
-                    drawAreaOnMap(a1TLLng, a1TLLat, a1BRLng, a1BRLat, "blue", "区域1")
-                    drawAreaOnMap(a2TLLng, a2TLLat, a2BRLng, a2BRLat, "red", "区域2")
+                if (resultDiv) {
+                    resultDiv.innerHTML = `<p class="error-message">${displayMessage}</p>`;
                 }
-            })
-            .catch((error) => {
-                resultDiv.innerHTML = `<p>查询出错：${error.message}</p>`
-                console.error("Error:", error)
-            })
+                // 在控制台打印更详细的错误对象，以便调试
+                console.error("查询出错详情 (Error Object):", error);
+                if (error && error.errorData) { // 如果我们附加了原始解析的错误数据
+                    console.error("后端返回的原始ErrorData:", error.errorData);
+                }
+            });
     }
 
     // 修改后的绘制区域函数，增加区域标签
@@ -248,4 +332,5 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("绘制区域时出错:", error)
         }
     }
+
 })

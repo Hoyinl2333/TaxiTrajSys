@@ -109,69 +109,6 @@ public class DensityAnalysisServiceTest {
         printResultSummary(query, result);
     }
 
-    @Test
-    @DisplayName("无效参数测试 - 结束时间早于开始时间")
-    public void testInvalidParameters_EndTimeBeforeStartTime() {
-        DensityQuery query = createValidBaseQuery();
-        query.setStartTime(LocalDateTime.parse("2008-02-02 15:00:00", formatter));
-        query.setEndTime(LocalDateTime.parse("2008-02-02 14:00:00", formatter)); // 结束时间早于开始时间
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            densityAnalysisService.analyzeTrafficDensity(query);
-        });
-        assertTrue(exception.getMessage().contains("结束时间不能早于开始时间"));
-        System.out.println("[无效参数测试] 捕获到预期异常: " + exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("无效参数测试 - 网格大小为零或负数")
-    public void testInvalidParameters_InvalidGridSize() {
-        DensityQuery query = createValidBaseQuery();
-        query.setStartTime(LocalDateTime.parse("2008-02-02 15:00:00", formatter));
-        query.setEndTime(LocalDateTime.parse("2008-02-02 16:00:00", formatter));
-        query.setGridSize(0.0); // 无效网格大小
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            densityAnalysisService.analyzeTrafficDensity(query);
-        });
-        assertTrue(exception.getMessage().contains("网格大小必须为正数"));
-        System.out.println("[无效参数测试] 捕获到预期异常 (gridSize=0): " + exception.getMessage());
-
-
-        query.setGridSize(-1.0); // 无效网格大小
-        exception = assertThrows(IllegalArgumentException.class, () -> {
-            densityAnalysisService.analyzeTrafficDensity(query);
-        });
-        assertTrue(exception.getMessage().contains("网格大小必须为正数"));
-        System.out.println("[无效参数测试] 捕获到预期异常 (gridSize=-1): " + exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("无效参数测试 - 地理边界缺失 (假设DensityQuery用@NotNull等校验)")
-    public void testInvalidParameters_MissingGeoBounds() {
-        DensityQuery query = new DensityQuery(); // 不使用 createValidBaseQuery() 来模拟缺失
-        query.setGridSize(1.0);
-        query.setStartTime(LocalDateTime.parse("2008-02-02 15:00:00", formatter));
-        query.setEndTime(LocalDateTime.parse("2008-02-02 16:00:00", formatter));
-        query.setTimeSlotMinutes(60);
-        // minLongitude, minLatitude, maxLongitude, maxLatitude 未设置
-
-        // 这个测试依赖于您的 DensityQuery.validate() 或JSR303注解是否会因边界缺失而抛出异常
-        // 如果 DensityQuery 的字段本身有 @NotNull, @Valid 在Controller层就会校验
-        // 如果是 validate() 方法校验，则会在这里被服务层调用时触发
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            densityAnalysisService.analyzeTrafficDensity(query);
-        });
-        // 期望的错误信息可能类似 "最小经度不能为空" 或 "地理边界参数不能为空"
-        // 这个断言需要根据您 DensityQuery 中实际的校验逻辑调整
-        assertTrue(exception.getMessage().toLowerCase().contains("longitude") ||
-                        exception.getMessage().toLowerCase().contains("latitude") ||
-                        exception.getMessage().contains("地理边界") ||
-                        exception.getMessage().contains("所有查询参数"), // 根据您 validate() 的具体实现
-                "异常信息应指明地理边界参数问题: " + exception.getMessage());
-        System.out.println("[无效参数测试 - 边界缺失] 捕获到预期异常: " + exception.getMessage());
-    }
-
 
     @Test
     @DisplayName("边界情况测试 - 没有出租车数据（或没有符合条件的数据）")

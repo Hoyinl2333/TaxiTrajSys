@@ -3,19 +3,21 @@ package com.codex.taxitrajectory.controller;
 import com.codex.taxitrajectory.model.query.RegionQuery;
 import com.codex.taxitrajectory.model.result.RegionQueryResult;
 import com.codex.taxitrajectory.service.RegionQueryService;
-import org.springframework.format.annotation.DateTimeFormat;
+import jakarta.servlet.http.HttpServletRequest; // 导入 HttpServletRequest
+import jakarta.validation.Valid; // 导入 @Valid
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus; // 导入 HttpStatus
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*; // 导入 PostMapping
 
-import java.time.LocalDateTime;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/region")
 public class RegionAnalysisController {
 
+    private static final Logger logger = LoggerFactory.getLogger(RegionAnalysisController.class); // 添加 logger
     private final RegionQueryService regionQueryService;
 
     public RegionAnalysisController(RegionQueryService regionQueryService) {
@@ -23,29 +25,34 @@ public class RegionAnalysisController {
     }
 
     /**
-     * F3: 区域范围查找
+     * F3: 区域范围查找。
+     * 接收一个包含地理边界和时间范围的RegionQuery对象。
+     * @param query 区域查询参数对象，通过 @Valid 进行校验。
+     * @param request HTTP请求对象。
+     * @return 包含区域内出租车数量和GPS点列表的ResponseEntity。
      */
-    @GetMapping("/count")
+    @PostMapping("/count") // 修改为 @PostMapping
     public ResponseEntity<RegionQueryResult> countTaxisInRegion(
-            @RequestParam double lon1,
-            @RequestParam double lat1,
-            @RequestParam double lon2,
-            @RequestParam double lat2,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+            @RequestBody @Valid RegionQuery query, HttpServletRequest request) { // 修改为 @RequestBody @Valid
 
-        // 创建Query对象
-        RegionQuery query = new RegionQuery(
-                Math.min(lon1, lon2),
-                Math.min(lat1, lat2),
-                Math.max(lon1, lon2),
-                Math.max(lat1, lat2),
-                startTime,
-                endTime
-        );
+        String requestId = UUID.randomUUID().toString().substring(0, 8);
+        long startTimeMillis = System.currentTimeMillis();
 
-        query.validate();
+        logger.info("==================== 请求处理开始 : API=[区域范围查找F3] ====================");
+        logger.info("接收请求 : 方法=[{}], 路径=[{}], 请求ID=[{}]", request.getMethod(), request.getRequestURI(), requestId);
+        // RegionQuery DTO现在由 @Valid 自动校验，包括其内部的 @ValidTimeRange 和 @ValidGeoBoundingBox
+        logger.info("请求参数 : ID=[{}], 参数=[{}]", requestId, query.toString());
+
+
         RegionQueryResult result = regionQueryService.getTaxisInRegion(query);
+
+        long durationMillis = System.currentTimeMillis() - startTimeMillis;
+        logger.info("响应结果 : ID=[{}], 状态码=[{}], 处理耗时=[{}ms]", requestId, HttpStatus.OK.value(), durationMillis);
+        if (result != null) {
+            logger.info("响应内容摘要 : ID=[{}], 出租车数量=[{}]", requestId, result.getTaxiCount());
+        }
+        logger.info("==================== 请求处理结束 : ID=[{}] ====================", requestId);
+
         return ResponseEntity.ok(result);
     }
 }

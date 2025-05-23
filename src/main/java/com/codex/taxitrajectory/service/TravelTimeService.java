@@ -50,12 +50,8 @@ public class TravelTimeService {
      * @return 分析结果 (TravelTimeResult 对象，原 ShortestPathInfo)
      */
     public TravelTimeResult analyzeShortestTravelTime(TravelTimeQuery query) {
-        // 1. 参数验证
-        if (!isValidQuery(query)) {
-            log.warn("查询参数无效，返回未找到结果。");
-            // 返回一个表示未找到结果的 TravelTimeResult (即原 ShortestPathInfo 的默认构造函数)
-            return new TravelTimeResult();
-        }
+
+        // 1. 开始，参数校验已经通过Query
         log.info("开始分析最短通行时间, 区域A: {}, 区域B: {}, 查询时间段: {} 到 {}",
                 query.getRegionA(), query.getRegionB(), query.getStartTime(), query.getEndTime());
 
