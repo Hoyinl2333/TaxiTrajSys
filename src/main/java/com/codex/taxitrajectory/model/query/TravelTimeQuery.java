@@ -1,6 +1,7 @@
 package com.codex.taxitrajectory.model.query;
 
 import com.codex.taxitrajectory.model.core.Region;
+import com.codex.taxitrajectory.model.validation.ValidGeoBoundingBox;
 import com.codex.taxitrajectory.model.validation.ValidTimeRange; // 导入自定义时间范围注解
 import jakarta.validation.Valid; // 导入 @Valid 用于级联校验
 import jakarta.validation.constraints.NotNull;
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor // 添加无参构造函数
 @ValidTimeRange
+@ValidGeoBoundingBox
 public class TravelTimeQuery {
 
     /**
@@ -24,7 +26,6 @@ public class TravelTimeQuery {
      * 不能为空，且其内部定义的地理边界必须有效。
      */
     @NotNull(message = "起始区域A不能为空")
-    @Valid
     private Region regionA;
 
     /**
@@ -46,7 +47,6 @@ public class TravelTimeQuery {
      * 不能为空，并且必须在开始时间之后或与开始时间相同。
      */
     @NotNull(message = "结束时间不能为空")
-    @Valid
     private LocalDateTime endTime;
 
     /**

@@ -29,17 +29,6 @@ public class DensityAnalysisService {
 
     private final TaxiRepository taxiRepository;
 
-//    // 全局地图边界配置 (现在仅作为参考或潜在的系统级校验，网格主要由查询参数定义)
-//    // 如果完全不再使用，可以考虑移除
-//    @Value("${map.bounds.minLongitude}")
-//    private double configMapMinLon;
-//    @Value("${map.bounds.minLatitude}")
-//    private double configMapMinLat;
-//    @Value("${map.bounds.maxLongitude}")
-//    private double configMapMaxLon;
-//    @Value("${map.bounds.maxLatitude}")
-//    private double configMapMaxLat;
-
     @Autowired
     public DensityAnalysisService(TaxiRepository taxiRepository) {
         this.taxiRepository = taxiRepository;
