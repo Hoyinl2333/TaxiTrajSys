@@ -1,335 +1,294 @@
 /**
  * F9: 通信时间分析
- * 分析两个矩形区域间的最短通信时间，并在地图上显示
  */
 
-// 全局变量，用于存储地图覆盖物
-window.f9AreaRectangles = [] // 存储区域矩形覆盖物
-window.f9PathPolyline = null // 存储路径折线对象
+// 全局变量，F9功能专属
+window.f9AreaOverlays = window.f9AreaOverlays || [];       // 存储区域A、B的矩形和标签
+window.f9PathRelatedOverlays = window.f9PathRelatedOverlays || []; // 存储路径线、起点和终点标记
 
-const communicationTimeBtn = document.getElementById("communicationTimeBtn")
-
-if (communicationTimeBtn) {
-  communicationTimeBtn.addEventListener("click", () => {
-    // 使用 const 获取 DOM 元素的值
-    const startTimeStr = document.getElementById("f9_startTime").value
-    const endTimeStr = document.getElementById("f9_endTime").value
-    const areaATopLeftLng = document.getElementById("f9_areaA_topLeftLng").value
-    const areaATopLeftLat = document.getElementById("f9_areaA_topLeftLat").value
-    const areaABottomRightLng = document.getElementById("f9_areaA_bottomRightLng").value
-    const areaABottomRightLat = document.getElementById("f9_areaA_bottomRightLat").value
-    const areaBTopLeftLng = document.getElementById("f9_areaB_topLeftLng").value
-    const areaBTopLeftLat = document.getElementById("f9_areaB_topLeftLat").value
-    const areaBBottomRightLng = document.getElementById("f9_areaB_bottomRightLng").value
-    const areaBBottomRightLat = document.getElementById("f9_areaB_bottomRightLat").value
-
-    // --- 客户端验证 ---
-    if (
-      !startTimeStr ||
-      !endTimeStr ||
-      !areaATopLeftLng ||
-      !areaATopLeftLat ||
-      !areaABottomRightLng ||
-      !areaABottomRightLat ||
-      !areaBTopLeftLng ||
-      !areaBTopLeftLat ||
-      !areaBBottomRightLng ||
-      !areaBBottomRightLat
-    ) {
-      alert("请填写完整的分析条件")
-      return
-    }
-
-    const parsedStartTime = new Date(startTimeStr)
-    const parsedEndTime = new Date(endTimeStr)
-
-    if (isNaN(parsedStartTime.getTime()) || isNaN(parsedEndTime.getTime())) {
-      alert("时间格式无效，请确保输入的时间是有效的日期和时间格式。\n例如: YYYY-MM-DDTHH:mm:ss 或 YYYY/MM/DD HH:mm:ss")
-      return
-    }
-
-    if (parsedStartTime >= parsedEndTime) {
-      alert("开始时间必须早于结束时间。")
-      return
-    }
-
-    const coords = [
-      areaATopLeftLng,
-      areaATopLeftLat,
-      areaABottomRightLng,
-      areaABottomRightLat,
-      areaBTopLeftLng,
-      areaBTopLeftLat,
-      areaBBottomRightLng,
-      areaBBottomRightLat,
-    ]
-    for (const coord of coords) {
-      if (isNaN(Number.parseFloat(coord))) {
-        alert(`坐标值 "${coord}" 无效，请输入数字。`)
-        return
-      }
-    }
-
-    // 清除之前的覆盖物
-    clearF9Overlays()
-
-    // 绘制区域A和区域B的矩形
-    drawF9AreaRectangles(
-      areaATopLeftLng,
-      areaATopLeftLat,
-      areaABottomRightLng,
-      areaABottomRightLat,
-      areaBTopLeftLng,
-      areaBTopLeftLat,
-      areaBBottomRightLng,
-      areaBBottomRightLat,
-    )
-
-    // 调用分析函数
-    performCommunicationTimeAnalysis(
-      startTimeStr,
-      endTimeStr,
-      areaATopLeftLng,
-      areaATopLeftLat,
-      areaABottomRightLng,
-      areaABottomRightLat,
-      areaBTopLeftLng,
-      areaBTopLeftLat,
-      areaBBottomRightLng,
-      areaBBottomRightLat,
-    )
-  })
-}
-
-// 绘制区域A和区域B的矩形
+/**
+ * 绘制F9功能的区域A和区域B的矩形及标签。
+ * 覆盖物会被添加到 window.f9AreaOverlays 数组。
+ */
 function drawF9AreaRectangles(
-  areaATopLeftLng,
-  areaATopLeftLat,
-  areaABottomRightLng,
-  areaABottomRightLat,
-  areaBTopLeftLng,
-  areaBTopLeftLat,
-  areaBBottomRightLng,
-  areaBBottomRightLat,
+    areaATopLeftLng, areaATopLeftLat, areaABottomRightLng, areaABottomRightLat,
+    areaBTopLeftLng, areaBTopLeftLat, areaBBottomRightLng, areaBBottomRightLat
 ) {
-  // 创建区域A的矩形
-  const areaAPoints = [
-    new BMapGL.Point(Number.parseFloat(areaATopLeftLng), Number.parseFloat(areaATopLeftLat)),
-    new BMapGL.Point(Number.parseFloat(areaABottomRightLng), Number.parseFloat(areaATopLeftLat)),
-    new BMapGL.Point(Number.parseFloat(areaABottomRightLng), Number.parseFloat(areaABottomRightLat)),
-    new BMapGL.Point(Number.parseFloat(areaATopLeftLng), Number.parseFloat(areaABottomRightLat)),
-  ]
 
-  const areaAPolygon = new BMapGL.Polygon(areaAPoints, {
-    strokeColor: "#FF0000",
-    strokeWeight: 2,
-    strokeOpacity: 1,
-    fillColor: "#FF0000",
-    fillOpacity: 0.3,
-  })
-  map.addOverlay(areaAPolygon)
+  const createRectAndLabel = (topLeftLngStr, topLeftLatStr, bottomRightLngStr, bottomRightLatStr, color, labelText) => {
+    try {
+      const topLeftLng = Number.parseFloat(topLeftLngStr);
+      const topLeftLat = Number.parseFloat(topLeftLatStr);
+      const bottomRightLng = Number.parseFloat(bottomRightLngStr);
+      const bottomRightLat = Number.parseFloat(bottomRightLatStr);
 
-  // 添加区域A标签
-  const areaALabel = new BMapGL.Label("区域A", {
-    position: new BMapGL.Point(
-      (Number.parseFloat(areaATopLeftLng) + Number.parseFloat(areaABottomRightLng)) / 2,
-      (Number.parseFloat(areaATopLeftLat) + Number.parseFloat(areaABottomRightLat)) / 2,
-    ),
-    offset: new BMapGL.Size(0, 0),
-  })
-  areaALabel.setStyle({
-    color: "#fff",
-    backgroundColor: "rgba(255, 0, 0, 0.8)",
-    border: "none",
-    fontSize: "14px",
-    padding: "5px 10px",
-    borderRadius: "3px",
-  })
-  map.addOverlay(areaALabel)
+      const tlPoint = new BMapGL.Point(topLeftLng, topLeftLat);
+      const brPoint = new BMapGL.Point(bottomRightLng, bottomRightLat);
 
-  // 创建区域B的矩形
-  const areaBPoints = [
-    new BMapGL.Point(Number.parseFloat(areaBTopLeftLng), Number.parseFloat(areaBTopLeftLat)),
-    new BMapGL.Point(Number.parseFloat(areaBBottomRightLng), Number.parseFloat(areaBTopLeftLat)),
-    new BMapGL.Point(Number.parseFloat(areaBBottomRightLng), Number.parseFloat(areaBBottomRightLat)),
-    new BMapGL.Point(Number.parseFloat(areaBTopLeftLng), Number.parseFloat(areaBBottomRightLat)),
-  ]
+      const rectPoints = [
+        tlPoint, new BMapGL.Point(brPoint.lng, tlPoint.lat),
+        brPoint, new BMapGL.Point(tlPoint.lng, brPoint.lat)
+      ];
+      const polygon = new BMapGL.Polygon(rectPoints, {
+        strokeColor: color, strokeWeight: 2, strokeOpacity: 1,
+        fillColor: color, fillOpacity: 0.3,
+      });
+      if (map) map.addOverlay(polygon);
+      window.f9AreaOverlays.push(polygon);
 
-  const areaBPolygon = new BMapGL.Polygon(areaBPoints, {
-    strokeColor: "#0000FF",
-    strokeWeight: 2,
-    strokeOpacity: 1,
-    fillColor: "#0000FF",
-    fillOpacity: 0.3,
-  })
-  map.addOverlay(areaBPolygon)
+      const label = new BMapGL.Label(labelText, {
+        position: new BMapGL.Point((topLeftLng + bottomRightLng) / 2, (topLeftLat + bottomRightLat) / 2),
+        offset: new BMapGL.Size(-20, -10)
+      });
+      label.setStyle({
+        color: "#fff", backgroundColor: color === "#FF0000" ? "rgba(255,0,0,0.8)" : "rgba(0,0,255,0.8)",
+        border: "none", fontSize: "14px", padding: "5px 10px", borderRadius: "3px",
+      });
+      if (map) map.addOverlay(label);
+      window.f9AreaOverlays.push(label);
+      return rectPoints;
+    } catch (e) {
+      console.error(`F9: 绘制区域 ${labelText} 出错:`, e);
+      return [];
+    }
+  };
 
-  // 添加区域B标签
-  const areaBLabel = new BMapGL.Label("区域B", {
-    position: new BMapGL.Point(
-      (Number.parseFloat(areaBTopLeftLng) + Number.parseFloat(areaBBottomRightLng)) / 2,
-      (Number.parseFloat(areaBTopLeftLat) + Number.parseFloat(areaBBottomRightLat)) / 2,
-    ),
-    offset: new BMapGL.Size(0, 0),
-  })
-  areaBLabel.setStyle({
-    color: "#fff",
-    backgroundColor: "rgba(0, 0, 255, 0.8)",
-    border: "none",
-    fontSize: "14px",
-    padding: "5px 10px",
-    borderRadius: "3px",
-  })
-  map.addOverlay(areaBLabel)
+  const pointsA = createRectAndLabel(areaATopLeftLng, areaATopLeftLat, areaABottomRightLng, areaABottomRightLat, "#FF0000", "区域A");
+  const pointsB = createRectAndLabel(areaBTopLeftLng, areaBTopLeftLat, areaBBottomRightLng, areaBBottomRightLat, "#0000FF", "区域B");
 
-  // 存储矩形覆盖物以便后续清除
-  window.f9AreaRectangles = [areaAPolygon, areaALabel, areaBPolygon, areaBLabel]
-
-  // 调整地图视野以包含两个区域
-  const allPoints = [...areaAPoints, ...areaBPoints]
-  map.setViewport(allPoints)
+  if (map && pointsA.length > 0 && pointsB.length > 0) {
+    map.setViewport([...pointsA, ...pointsB]);
+  } else if (map && pointsA.length > 0) {
+    map.setViewport(pointsA);
+  } else if (map && pointsB.length > 0) {
+    map.setViewport(pointsB);
+  }
 }
 
-// 绘制最短路径
+/**
+ * 绘制F9功能的最短路径及其起点终点标记。
+ * 覆盖物会被添加到 window.f9PathRelatedOverlays 数组。
+ */
 function drawF9ShortestPath(pathPoints) {
-  if (!pathPoints || pathPoints.length < 2) return
+  if (!pathPoints || pathPoints.length < 2 || !map || !BMapGL) return;
 
-  // 创建路径点数组
-  const points = pathPoints.map(
-    (point) => new BMapGL.Point(Number.parseFloat(point.longitude), Number.parseFloat(point.latitude)),
-  )
+  // 先清除旧的路径相关覆盖物
+  if (window.f9PathRelatedOverlays && Array.isArray(window.f9PathRelatedOverlays)) {
+    window.f9PathRelatedOverlays.forEach(overlay => {
+      if (map.removeOverlay && overlay) try { map.removeOverlay(overlay); } catch(e) {/* मौन */}
+    });
+  }
+  window.f9PathRelatedOverlays = [];
 
-  // 创建折线
-  window.f9PathPolyline = new BMapGL.Polyline(points, {
-    strokeColor: "#00FF00",
-    strokeWeight: 4,
-    strokeOpacity: 0.8,
-  })
-  map.addOverlay(window.f9PathPolyline)
+  const bmapPoints = pathPoints.map(
+      (p) => new BMapGL.Point(Number.parseFloat(p.longitude), Number.parseFloat(p.latitude))
+  );
 
-  // 添加起点和终点标记
-  const startMarker = new BMapGL.Marker(points[0])
-  const endMarker = new BMapGL.Marker(points[points.length - 1])
-  map.addOverlay(startMarker)
-  map.addOverlay(endMarker)
+  const pathPolyline = new BMapGL.Polyline(bmapPoints, {
+    strokeColor: "#00FF00", strokeWeight: 4, strokeOpacity: 0.8,
+  });
+  map.addOverlay(pathPolyline);
+  window.f9PathRelatedOverlays.push(pathPolyline);
 
-  // 将标记也添加到覆盖物数组中，以便后续清除
-  window.f9AreaRectangles.push(startMarker, endMarker)
+  const startMarker = new BMapGL.Marker(bmapPoints[0]);
+  map.addOverlay(startMarker);
+  window.f9PathRelatedOverlays.push(startMarker);
+
+  const endMarker = new BMapGL.Marker(bmapPoints[bmapPoints.length - 1]);
+  map.addOverlay(endMarker);
+  window.f9PathRelatedOverlays.push(endMarker);
 }
 
-// 清除F9功能的所有覆盖物
+/**
+ * 清除F9功能绘制的所有特定覆盖物（区域和路径）。
+ * 这个函数会被全局的 clearOverlays (来自map-utils.js)调用，
+ * 也会在F9功能开始一次新分析前被调用。
+ */
 window.clearF9Overlays = () => {
-  // 清除区域矩形和标记
-  window.f9AreaRectangles.forEach((overlay) => {
-    map.removeOverlay(overlay)
-  })
-  window.f9AreaRectangles = []
-
-  // 清除路径折线
-  if (window.f9PathPolyline) {
-    map.removeOverlay(window.f9PathPolyline)
-    window.f9PathPolyline = null
+  // console.log("F9: 清除所有F9特定覆盖物调用。"); // 可按需保留或移除日志
+  if (window.f9AreaOverlays && Array.isArray(window.f9AreaOverlays)) {
+    window.f9AreaOverlays.forEach((overlay) => {
+      if (map && map.removeOverlay && overlay) {
+        try { map.removeOverlay(overlay); } catch(e) { console.warn("F9: 移除区域覆盖物出错", e, overlay); }
+      }
+    });
   }
-}
+  window.f9AreaOverlays = [];
 
+  if (window.f9PathRelatedOverlays && Array.isArray(window.f9PathRelatedOverlays)) {
+    window.f9PathRelatedOverlays.forEach((overlay) => {
+      if (map && map.removeOverlay && overlay) {
+        try { map.removeOverlay(overlay); } catch(e) { console.warn("F9: 移除路径相关覆盖物出错", e, overlay); }
+      }
+    });
+  }
+  window.f9PathRelatedOverlays = [];
+};
+
+// 主分析函数
 function performCommunicationTimeAnalysis(
-  startTime,
-  endTime,
-  areaATopLeftLngStr,
-  areaATopLeftLatStr,
-  areaABottomRightLngStr,
-  areaABottomRightLatStr,
-  areaBTopLeftLngStr,
-  areaBTopLeftLatStr,
-  areaBBottomRightLngStr,
-  areaBBottomRightLatStr,
+    startTime, endTime,
+    valAreaATopLeftLng, valAreaATopLeftLat, valAreaABottomRightLng, valAreaABottomRightLat,
+    valAreaBTopLeftLng, valAreaBTopLeftLat, valAreaBBottomRightLng, valAreaBBottomRightLat
 ) {
-  const resultDiv = document.getElementById("f9_result")
-  if (!resultDiv) {
-    console.error("未找到 f9_result 元素")
-    return
+  const resultDivF9 = document.getElementById("f9_result");
+  if (!resultDivF9) { console.error("F9: 未找到 f9_result 元素"); return; }
+  resultDivF9.innerHTML = "<p>正在进行通信时间分析...</p>";
+
+  // 在开始新的分析前，清除之前的路径 (区域已在按钮点击时重新绘制或清除)
+  if (window.f9PathRelatedOverlays && Array.isArray(window.f9PathRelatedOverlays)) {
+    window.f9PathRelatedOverlays.forEach(overlay => {
+      if (map && map.removeOverlay && overlay) try { map.removeOverlay(overlay); } catch(e) {}
+    });
   }
-  resultDiv.innerHTML = "<p>正在进行通信时间分析...</p>"
-
-  // 解析经纬度字符串为浮点数
-  const atlLng = Number.parseFloat(areaATopLeftLngStr)
-  const atlLat = Number.parseFloat(areaATopLeftLatStr)
-  const abrLng = Number.parseFloat(areaABottomRightLngStr)
-  const abrLat = Number.parseFloat(areaABottomRightLatStr)
-
-  const btlLng = Number.parseFloat(areaBTopLeftLngStr)
-  const btlLat = Number.parseFloat(areaBTopLeftLatStr)
-  const bbrLng = Number.parseFloat(areaBBottomRightLngStr)
-  const bbrLat = Number.parseFloat(areaBBottomRightLatStr)
+  window.f9PathRelatedOverlays = [];
 
   const params = {
-    regionA: {
-      minLon: Math.min(atlLng, abrLng),
-      minLat: Math.min(atlLat, abrLat),
-      maxLon: Math.max(atlLng, abrLng),
-      maxLat: Math.max(atlLat, abrLat),
-    },
-    regionB: {
-      minLon: Math.min(btlLng, bbrLng),
-      minLat: Math.min(btlLat, bbrLat),
-      maxLon: Math.max(btlLng, bbrLng),
-      maxLat: Math.max(btlLat, bbrLat),
-    },
     startTime: startTime,
     endTime: endTime,
-  }
+    regionA: {
+      minLon: Number.parseFloat(valAreaATopLeftLng),
+      maxLat: Number.parseFloat(valAreaATopLeftLat),
+      maxLon: Number.parseFloat(valAreaABottomRightLng),
+      minLat: Number.parseFloat(valAreaABottomRightLat)
+    },
+    regionB: {
+      minLon: Number.parseFloat(valAreaBTopLeftLng),
+      maxLat: Number.parseFloat(valAreaBTopLeftLat),
+      maxLon: Number.parseFloat(valAreaBBottomRightLng),
+      minLat: Number.parseFloat(valAreaBBottomRightLat)
+    }
+  };
+  console.log("F9 发送给后端的参数:", JSON.stringify(params, null, 2));
 
-  const baseURL = window.location.hostname === "localhost" ? "http://localhost:8080" : ""
-  const apiUrl = `${baseURL}/travelTime/analyze`
+  const baseURL = window.location.hostname === "localhost" ? "http://localhost:8080" : "";
+  const apiUrl = `${baseURL}/travelTime/analyze`;
+  const featureName = "F9通行时间分析";
 
   fetch(apiUrl, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
   })
-    .then((response) => {
-      if (!response.ok) {
-        return response.text().then((text) => {
-          throw new Error(`网络响应异常，状态码: ${response.status}, 错误信息: ${text || response.statusText}`)
-        })
-      }
-      return response.json()
-    })
-    .then((data) => {
-      console.log("后端返回的数据:", data)
-      if (data && data.found) {
-        let resultHtml = `<p>通信时间分析结果：</p><ul>`
-
-        if (data.minTravelTimeFormatted) {
-          resultHtml += `<li>最短通行时间: ${data.minTravelTimeFormatted}</li>`
-        } else {
-          resultHtml += `<li>最短通行时间: 未提供或计算错误</li>`
+      .then(response => { // 应用简化的错误处理逻辑
+        console.log(`${featureName} 响应状态:`, response.status, "OK状态:", response.ok);
+        if (!response.ok) {
+          return response.json()
+              .then(errorData => {
+                let errorMessage = `网络响应异常，状态码: ${response.status}`;
+                console.log(`${featureName} 成功解析后端错误JSON:`, errorData);
+                if (errorData && errorData.details && errorData.details.length > 0) {
+                  const detailsText = errorData.details.map(detail => escapeHtml(detail)).join('; ');
+                  errorMessage += `<br/>详情: ${detailsText}`;
+                } else if (errorData && errorData.message) {
+                  errorMessage += `<br/>服务器消息: ${escapeHtml(errorData.message)}`;
+                } else {
+                  errorMessage += `。无法获取详细错误信息（非JSON或无内容）。`;
+                }
+                throw new Error(errorMessage);
+              })
+              .catch(async (parsingErrorOrThrownError) => {
+                if (parsingErrorOrThrownError.message.includes("网络响应异常，状态码:")) {
+                  throw parsingErrorOrThrownError;
+                }
+                console.warn(`${featureName} 解析JSON错误或处理错误数据时出错:`, parsingErrorOrThrownError);
+                let responseTextForDebug = "";
+                try {
+                  const textResponse = response.clone();
+                  responseTextForDebug = await textResponse.text();
+                  console.warn(`${featureName} 后端返回的原始文本内容:`, responseTextForDebug);
+                } catch (e) { /* 忽略 */ }
+                let finalErrorMessage = `网络响应异常，状态码: ${response.status}`;
+                if (responseTextForDebug) {
+                  finalErrorMessage += `<br/>服务器原始响应 (部分): ${escapeHtml(responseTextForDebug.substring(0,200))}`;
+                } else {
+                  finalErrorMessage += `。无法获取服务器返回的详细错误内容。`;
+                }
+                throw new Error(finalErrorMessage);
+              });
         }
-
-        if (data.shortestPath && data.shortestPath.length > 0) {
-          resultHtml += `<li>出租车ID: ${data.shortestPath[0].taxiId}</li>`
-          resultHtml += "<li>轨迹点：</li><ul>"
-          data.shortestPath.forEach((point) => {
-            const pointTimestamp = point.timestamp ? new Date(point.timestamp).toLocaleString() : "N/A"
-            resultHtml += `<li>时间: ${pointTimestamp}, 经度: ${point.longitude}, 纬度: ${point.latitude}</li>`
-          })
-          resultHtml += "</ul>"
-
-          // 绘制最短路径
-          drawF9ShortestPath(data.shortestPath)
+        return response.json();
+      })
+      .then(data => {
+        const resultDiv = document.getElementById("f9_result");
+        if (resultDiv) {
+          if (data && data.found) {
+            let resultHtml = `<p>通信时间分析结果：</p><ul>`;
+            resultHtml += `<li>最短通行时间: ${escapeHtml(data.minTravelTimeFormatted || "N/A")}</li>`;
+            if (data.shortestPath && data.shortestPath.length > 0) {
+              resultHtml += `<li>出租车ID: ${escapeHtml(data.shortestPath[0].taxiId)}</li>`;
+              drawF9ShortestPath(data.shortestPath);
+            } else {
+              resultHtml += `<li>未找到具体路径点。</li>`;
+              // 如果没有路径点，也确保清除旧的路径线
+              if (window.f9PathRelatedOverlays && Array.isArray(window.f9PathRelatedOverlays)) {
+                window.f9PathRelatedOverlays.forEach(overlay => { if (map && map.removeOverlay && overlay) try { map.removeOverlay(overlay); } catch(e) {} });
+                window.f9PathRelatedOverlays = [];
+              }
+            }
+            resultHtml += "</ul>";
+            resultDiv.innerHTML = resultHtml;
+          } else if (data && data.message) {
+            resultDiv.innerHTML = `<p>分析提示：${escapeHtml(data.message)}</p>`;
+            clearOldPath(); // 清除可能存在的旧路径
+          } else {
+            resultDiv.innerHTML = "<p>未找到符合条件的通行路径，或未获取到有效分析结果。</p>";
+            clearOldPath(); // 清除可能存在的旧路径
+          }
         }
-        resultHtml += "</ul>"
-        resultDiv.innerHTML = resultHtml
-      } else if (data && data.message) {
-        resultDiv.innerHTML = `<p>分析提示：${data.message}</p>`
-      } else {
-        resultDiv.innerHTML = "<p>未获取到有效的分析结果，或未找到符合条件的路径。</p>"
-      }
-    })
-    .catch((error) => {
-      resultDiv.innerHTML = `<p>查询出错：${error.message}</p>`
-      console.error("Error during API call:", error)
-    })
+      })
+      .catch(error => {
+        const resultDiv = document.getElementById("f9_result");
+        if (resultDiv) {
+          resultDiv.innerHTML = `<p class="error-message">查询出错：<br/>${error.message}</p>`;
+        }
+        console.error(`${featureName} 查询出错详情 (Error Object):`, error);
+        clearOldPath(); // 出错时也清除旧路径
+      });
+
+  function clearOldPath() {
+    if (window.f9PathRelatedOverlays && Array.isArray(window.f9PathRelatedOverlays)) {
+      window.f9PathRelatedOverlays.forEach(overlay => { if (map && map.removeOverlay && overlay) try { map.removeOverlay(overlay); } catch(e) {} });
+      window.f9PathRelatedOverlays = [];
+    }
+  }
 }
+
+// --- DOMContentLoaded 事件监听器 ---
+document.addEventListener("DOMContentLoaded", () => {
+  const communicationTimeBtn = document.getElementById("communicationTimeBtn");
+  if (communicationTimeBtn) {
+    communicationTimeBtn.addEventListener("click", () => {
+      const startTime = document.getElementById("f9_startTime").value;
+      const endTime = document.getElementById("f9_endTime").value;
+      const areaATopLeftLng = document.getElementById("f9_areaA_topLeftLng").value;
+      const areaATopLeftLat = document.getElementById("f9_areaA_topLeftLat").value;
+      const areaABottomRightLng = document.getElementById("f9_areaA_bottomRightLng").value;
+      const areaABottomRightLat = document.getElementById("f9_areaA_bottomRightLat").value;
+      const areaBTopLeftLng = document.getElementById("f9_areaB_topLeftLng").value;
+      const areaBTopLeftLat = document.getElementById("f9_areaB_topLeftLat").value;
+      const areaBBottomRightLng = document.getElementById("f9_areaB_bottomRightLng").value;
+      const areaBBottomRightLat = document.getElementById("f9_areaB_bottomRightLat").value;
+
+
+      if (!startTime || !endTime || !areaATopLeftLng || !areaATopLeftLat || /* ... */ !areaBBottomRightLat ) {
+        alert("F9: 请填写所有区域坐标和时间段。");
+        return;
+      }
+
+      if (typeof window.clearF9Overlays === "function") { // 先清除所有F9相关的旧覆盖物
+        window.clearF9Overlays();
+      }
+      drawF9AreaRectangles(
+          areaATopLeftLng, areaATopLeftLat, areaABottomRightLng, areaABottomRightLat,
+          areaBTopLeftLng, areaBTopLeftLat, areaBBottomRightLng, areaBBottomRightLat
+      );
+
+      performCommunicationTimeAnalysis(
+          startTime,endTime,
+          areaATopLeftLng, areaATopLeftLat, areaABottomRightLng, areaABottomRightLat,
+          areaBTopLeftLng, areaBTopLeftLat, areaBBottomRightLng, areaBBottomRightLat
+      );
+    });
+  }
+});

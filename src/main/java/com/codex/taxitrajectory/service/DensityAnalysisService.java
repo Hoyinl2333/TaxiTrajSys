@@ -47,19 +47,11 @@ public class DensityAnalysisService {
 
     public DensityAnalysisResult analyzeTrafficDensity(DensityQuery query) {
         long globalStartTimeMs = System.currentTimeMillis();
-        logger.info("======================");
-        logger.info("开始处理车流密度分析请求. 查询参数: {}", query);
+//        logger.info("======================");
+//        logger.info("开始处理车流密度分析请求. 查询参数: {}", query);
 
         // 1. 参数校验 (在 DensityQuery 内部或此处进行)
         // DensityQuery 的 @Valid 会触发 JSR 303 注解校验
-        // query.validate() 包含自定义逻辑校验
-        try {
-            query.validate(); // 确保所有参数，包括地理边界，都已提供且有效
-            logger.debug("查询参数校验通过.");
-        } catch (IllegalArgumentException e) {
-            logger.warn("车流密度分析参数无效: {}", e.getMessage());
-            throw e;
-        }
 
         // 2. 创建网格 (使用查询参数中用户定义的边界)
         // 注意: DensityQuery 需已更新，包含 minLongitude, minLatitude, maxLongitude, maxLatitude 字段

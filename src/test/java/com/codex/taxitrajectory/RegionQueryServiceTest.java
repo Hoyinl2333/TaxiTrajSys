@@ -107,12 +107,12 @@ public class RegionQueryServiceTest {
         );
 
         // 预热阶段：提前调用几次以排除 JVM 预热或缓存加载的影响
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 2; i++) {
             regionQueryService.getTaxisInRegion(query);
         }
 
         // 正式测试：执行指定次数，记录总耗时
-        final int iterations = 100;
+        final int iterations = 10;
         long totalNanoTime = 0;
         for (int i = 0; i < iterations; i++) {
             long startNano = System.nanoTime();

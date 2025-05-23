@@ -2,55 +2,71 @@ package com.codex.taxitrajectory.controller;
 
 import com.codex.taxitrajectory.model.core.TaxiRecord;
 import com.codex.taxitrajectory.repository.TaxiRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/taxi")
+@Validated
 public class TaxiController {
 
     private static final Logger logger = LoggerFactory.getLogger(TaxiController.class);
-
     private final TaxiRepository taxiRepository;
-
 
     public TaxiController(TaxiRepository taxiRepository) {
         this.taxiRepository = taxiRepository;
     }
 
+    /**
+     * F1: 根据出租车ID获取其轨迹数据。
+     * @param id 出租车ID，通过路径变量传递，必须为正整数。
+     * @param request HTTP请求对象。
+     * @return 包含出租车轨迹记录列表的ResponseEntity。
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<List<TaxiRecord>> getTaxiTrajectory(@PathVariable String id) {
+    public ResponseEntity<List<TaxiRecord>> getTaxiTrajectory(
+            @PathVariable @NotNull(message = "出租车ID不能为空")
+            @Min(value = 1, message = "出租车ID必须是大于0的数字")
+            @Max(value = 10357,message = "出租车ID必须是小于10358的数字")
+            Long id, // 将类型从 String 修改为 Long
+            HttpServletRequest request) {
 
-        logger.info("============================");
-        logger.info("收到出租车轨迹绘制请求. Taxi ID: {}", id);
-        long startTime = System.nanoTime();
+        String requestId = UUID.randomUUID().toString().substring(0, 8);
+        long processingStartTimeNanos = System.nanoTime();
+
+        logger.info("==================== 请求处理开始 : API=[获取出租车轨迹F1] ====================");
+        logger.info("接收请求 : 方法=[{}], 路径=[{}], 请求ID=[{}]", request.getMethod(), request.getRequestURI(), requestId);
+        logger.info("请求参数 : ID=[{}], 出租车ID=[{}]", requestId, id);
+
 
         List<TaxiRecord> records;
         try {
-            records = taxiRepository.getRecordsByTaxiIdAsList(id);
+            // TaxiRepository 通常期望的是字符串ID，所以这里需要将 Long 转换回 String
+            records = taxiRepository.getRecordsByTaxiIdAsList(String.valueOf(id));
         } catch (Exception e) {
-            logger.error("获取数据发生异常！ Taxi ID: {}. Error: {}", id, e.getMessage(), e);
-            // 根据您的错误处理策略，这里可以向上抛出自定义异常或直接返回错误响应
-            // 例如: return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error fetching data");
-            throw e;
+            logger.error("获取出租车轨迹数据时发生异常 : ID=[{}], 出租车ID=[{}], 错误=[{}]",
+                    requestId, id, e.getMessage(), e);
+            throw e; // 重新抛出，让GlobalExceptionHandler处理
         }
 
-        // 计算耗时
-        long endTime = System.nanoTime();
-        long durationMs = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
+        long durationMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - processingStartTimeNanos);
 
-        // 记录获取到的数据量和耗时
-        if (records != null) {
-            logger.info("成功获取出租车ID: {} 的轨迹数据共 {} 条，耗时: {} 毫秒", id, records.size(), durationMs);
-        } else {
-            logger.warn("未能获取出租车ID: {} 的轨迹数据（返回为null），耗时: {} 毫秒。。", id, durationMs);
-        }
-        logger.info("============================");
+        logger.info("响应结果 : ID=[{}], 状态码=[{}], 记录数=[{}], 处理耗时=[{}ms]",
+                requestId, HttpStatus.OK.value(), (records != null ? records.size() : 0), durationMillis);
+
+        logger.info("==================== 请求处理结束 : ID=[{}] ====================", requestId);
 
         return ResponseEntity.ok(records);
     }

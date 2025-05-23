@@ -88,14 +88,11 @@ public class FrequentPathService {
      * @return 包含Top-K频繁路径及其频率的分析结果 ({@link FrequentPathResult})。
      */
     public FrequentPathResult analyzeFrequentPaths(FrequentPathQuery query) {
-        if (!query.isValid()) {
-            logger.warn("接收到无效的频繁路径查询参数 (FrequentPathQuery): {}", query);
-            return new FrequentPathResult(Collections.emptyList());
-        }
+
 
         long analysisStartTimeNanos = System.nanoTime();
-        logger.info("=============================");
-        logger.info("开始频繁路径分析，查询参数: {}", query);
+//        logger.info("=============================");
+//        logger.info("开始频繁路径分析，查询参数: {}", query);
 
         Grid grid = new Grid(configuredGridSizeKM, mapMinLongitude, mapMinLatitude, mapMaxLongitude, mapMaxLatitude);
         logger.info("网格已创建：{} 行 x {} 列，期望单元格大小约 {} 千米 (来自配置)",

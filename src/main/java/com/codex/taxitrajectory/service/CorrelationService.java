@@ -1,8 +1,9 @@
 package com.codex.taxitrajectory.service;
 
+import com.codex.taxitrajectory.model.core.Region;
 import com.codex.taxitrajectory.model.core.TaxiRecord;
-import com.codex.taxitrajectory.model.query.RegionQueryWrapper.RegionCorrelationQuery;
-import com.codex.taxitrajectory.model.query.RegionQueryWrapper.RegionSingleCorrelationQuery;
+import com.codex.taxitrajectory.model.query.CorrelationQuery.RegionCorrelationQuery;
+import com.codex.taxitrajectory.model.query.CorrelationQuery.RegionSingleCorrelationQuery;
 import com.codex.taxitrajectory.model.result.RegionCorrelationResult;
 import com.codex.taxitrajectory.repository.TaxiRepository;
 import com.codex.taxitrajectory.utils.GeoUtils;
@@ -17,9 +18,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
-public class UnifiedRegionCorrelationService {
+public class CorrelationService {
 
-    private static final Logger logger = LoggerFactory.getLogger(UnifiedRegionCorrelationService.class);
+    private static final Logger logger = LoggerFactory.getLogger(CorrelationService.class);
 
     @Value("${logging.service.enabled:true}")
     private boolean loggingEnabled;
@@ -29,7 +30,7 @@ public class UnifiedRegionCorrelationService {
     // 缓存已加载的出租车轨迹数据（出租车 ID -> 时间戳排序的轨迹数据）
     private final Map<String, NavigableMap<LocalDateTime, TaxiRecord>> taxiDataCache = new ConcurrentHashMap<>();
 
-    public UnifiedRegionCorrelationService(TaxiRepository taxiRepository) {
+    public CorrelationService(TaxiRepository taxiRepository) {
         this.taxiRepository = taxiRepository;
     }
 
@@ -67,18 +68,27 @@ public class UnifiedRegionCorrelationService {
         Map<LocalDateTime, int[]> flowChangeMap = timeSlots.parallelStream()
                 .collect(Collectors.toMap(
                         slotStartTime -> slotStartTime,
-                        slotStartTime -> analyzeTrafficFlowBetweenRegions(
-                                slotStartTime,
-                                slotStartTime.plusMinutes(timeSlotMinutes),
-                                query.getTopLeftLongitude1(),
-                                query.getTopLeftLatitude1(),
-                                query.getBottomRightLongitude1(),
-                                query.getBottomRightLatitude1(),
-                                query.getTopLeftLongitude2(),
-                                query.getTopLeftLatitude2(),
-                                query.getBottomRightLongitude2(),
-                                query.getBottomRightLatitude2()
-                        )
+                        slotStartTime -> {
+                            Region region1 = query.getRegion1();
+                            Region region2 = query.getRegion2();
+
+                            // 调用私有辅助方法时，传递Region对象的边界值
+                            // 根据约定“左上角经度小，纬度大”
+                            // และ GeoUtils.isInRectangle 的参数顺序 (lon, lat, topLeftLon, topLeftLat, bottomRightLon, bottomRightLat)
+                            // 我们需要将 Region 的 min/max 映射到 topLeft/bottomRight 概念
+                            return analyzeTrafficFlowBetweenRegions(
+                                    slotStartTime,
+                                    slotStartTime.plusMinutes(timeSlotMinutes),
+                                    region1.getMinLon(), // topLeftLongitude1
+                                    region1.getMaxLat(), // topLeftLatitude1 (纬度大的是top)
+                                    region1.getMaxLon(), // bottomRightLongitude1
+                                    region1.getMinLat(), // bottomRightLatitude1 (纬度小的是bottom)
+                                    region2.getMinLon(), // topLeftLongitude2
+                                    region2.getMaxLat(), // topLeftLatitude2
+                                    region2.getMaxLon(), // bottomRightLongitude2
+                                    region2.getMinLat()  // bottomRightLatitude2
+                            );
+                        }
                 ));
 
         long totalAnalysisTime = System.currentTimeMillis() - analysisStart;

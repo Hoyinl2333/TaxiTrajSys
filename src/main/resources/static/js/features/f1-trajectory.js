@@ -1,71 +1,58 @@
+// 在 f1-trajectory.js 文件中
+
 /**
  * F1: 出租车轨迹查询
- * 根据出租车ID获取轨迹数据，并在地图上显示
  */
 function fetchTaxiTrajectory() {
-    // 获取用户输入的出租车ID
-    var taxiId = document.getElementById("taxiId").value
-    if (taxiId === "") {
-        alert("请输入出租车ID")
-        return
-    }
+    var taxiId = document.getElementById("taxiId").value;
 
-    // 获取功能区域内的结果显示div，而不是使用共用的result div
-    var resultDiv = document.getElementById("f1_result")
-    resultDiv.innerHTML = "<p>正在加载数据...</p>"
 
-    // 清除地图上之前的覆盖物
-    clearOverlays()
+    var resultDiv = document.getElementById("f1_result");
+    resultDiv.innerHTML = "<p>正在加载数据...</p>";
+    clearOverlays();
 
-    // 构建API请求URL
-    const baseURL = window.location.hostname === "localhost" ? "http://localhost:8080" : ""
-    var url = `${baseURL}/taxi/${taxiId}`
+    const baseURL = window.location.hostname === "localhost" ? "http://localhost:8080" : "";
+    var apiUrl = `${baseURL}/taxi/${taxiId}`;
+    const featureName = "F1出租车轨迹查询"; // 定义功能名称
 
-    // 发送请求获取轨迹数据
-    fetch(url)
-        .then((response) => {
-            if (!response.ok) throw new Error("网络响应异常")
-            return response.json()
-        })
-        .then((data) => {
-            // 在功能区域内显示结果，而不是在共用的result div中
-            resultDiv.innerHTML = `<p>成功获取出租车 ${taxiId} 的轨迹数据，共 ${data.length} 个点</p>`
+    // 使用通用的 fetchApi 函数
+    fetchApi(apiUrl, { method: 'GET' }, featureName) // F1是GET请求，所以options可以简化或省略method
+        .then((data) => { // data 是成功时解析后的业务数据
+            const resultDiv = document.getElementById("f1_result"); // 重新获取，确保作用域
+            if (resultDiv) {
+                resultDiv.innerHTML = `<p>成功获取出租车 ${taxiId} 的轨迹数据，共 ${data.length} 个点</p>`;
+            }
 
-            // 清空共用的result div，确保结果只显示在功能区域内
-            document.getElementById("result").innerHTML = ""
-
-            // 处理轨迹点数据
-            var points = []
+            var points = [];
             data.forEach((record) => {
-                points.push(new BMapGL.Point(record.longitude, record.latitude))
-            })
+                points.push(new BMapGL.Point(record.longitude, record.latitude));
+            });
 
-            // 坐标转换并在地图上显示
-            convertCoordinates(points, (data) => {
-                if (data.status === 0) {
-                    data.points.forEach((point) => {
-                        addDotToMap(point)
-                    })
-
-                    if (data.points.length > 0) {
-                        map.setCenter(data.points[0])
+            convertCoordinates(points, (convertedData) => {
+                if (convertedData.status === 0) {
+                    convertedData.points.forEach((point) => {
+                        addDotToMap(point);
+                    });
+                    if (convertedData.points.length > 0 && map) {
+                        map.setCenter(convertedData.points[0]);
                     }
+                } else {
+                    console.error(`${featureName} 坐标转换失败:`, convertedData);
+                    if(resultDiv) resultDiv.innerHTML += "<p>但坐标转换失败。</p>";
                 }
-            })
+            });
         })
-        .catch((error) => {
-            // 在功能区域内显示错误信息
-            resultDiv.innerHTML = `<p>查询出错：${error.message}</p>`
-
-            // 清空共用的result div
-            document.getElementById("result").innerHTML = ""
-
-            // 清除地图上的覆盖物
-            clearOverlays()
-        })
+        .catch((error) => { // 捕获由 fetchApi 抛出的Error对象
+            // 使用通用的 displayFetchError 函数
+            displayFetchError(error, "f1_result", featureName);
+            clearOverlays(); // 出错时也清除地图
+        });
 }
 
-// 添加事件监听器
+
 document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("queryTrajectoryBtn").addEventListener("click", fetchTaxiTrajectory)
-})
+    const queryBtn = document.getElementById("queryTrajectoryBtn");
+    if (queryBtn) {
+        queryBtn.addEventListener("click", fetchTaxiTrajectory);
+    }
+});

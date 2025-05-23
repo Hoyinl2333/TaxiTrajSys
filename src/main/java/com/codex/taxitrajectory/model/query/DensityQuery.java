@@ -1,44 +1,91 @@
 package com.codex.taxitrajectory.model.query;
 
-import java.time.LocalDateTime;
+import com.codex.taxitrajectory.model.validation.ValidGeoBoundingBox;
+import com.codex.taxitrajectory.model.validation.ValidTimeRange;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
+import java.time.LocalDateTime;
 
+/**
+ * 区域车流密度分析的查询参数。
+ * 包含地理边界、时间范围、网格大小和时间槽定义。
+ * 通过JSR 303注解及自定义注解进行参数校验。
+ */
 @Data
+@ValidTimeRange // 校验时间范围的有效性
+@ValidGeoBoundingBox // 校验地理边界框的有效性
 public class DensityQuery {
+
+    /**
+     * 网格大小 (公里)。
+     */
+    @NotNull(message = "网格大小不能为空")
     @Positive(message = "网格大小必须为正数")
-    @NotNull(message = "网格大小不能为空") // 如果gridSize也是强制的
-    private Double gridSize;  // 网格大小(单位:km)
+    private Double gridSize;
 
+    /**
+     * 分析的开始时间。
+     */
     @NotNull(message = "开始时间不能为空")
-    private LocalDateTime startTime; // 开始时间
+    private LocalDateTime startTime;
 
+    /**
+     * 分析的结束时间。
+     */
     @NotNull(message = "结束时间不能为空")
-    private LocalDateTime endTime;   // 结束时间
+    private LocalDateTime endTime;
 
+    /**
+     * 时间分割粒度 (分钟)。
+     */
+    @NotNull(message = "时间间隔不能为空")
     @Positive(message = "时间间隔必须为正数")
-    @NotNull(message = "时间间隔不能为空") // 如果时间间隔也是强制的
-    private Integer timeSlotMinutes = 60; // 时间分割粒度，默认为60分钟
+    private Integer timeSlotMinutes = 60; // 默认60分钟
 
-    // 新增：强制性的地理边界参数
+    /**
+     * 查询区域的最小经度。
+     */
     @NotNull(message = "最小经度不能为空")
+    @DecimalMin(value = "-180.0", message = "最小经度必须是有效的地理坐标值 [-180, 180]")
+    @DecimalMax(value = "180.0", message = "最小经度必须是有效的地理坐标值 [-180, 180]")
     private Double minLongitude;
 
+    /**
+     * 查询区域的最小纬度。
+     */
     @NotNull(message = "最小纬度不能为空")
+    @DecimalMin(value = "-90.0", message = "最小纬度必须是有效的地理坐标值 [-90, 90]")
+    @DecimalMax(value = "90.0", message = "最小纬度必须是有效的地理坐标值 [-90, 90]")
     private Double minLatitude;
 
+    /**
+     * 查询区域的最大经度。
+     */
     @NotNull(message = "最大经度不能为空")
+    @DecimalMin(value = "-180.0", message = "最大经度必须是有效的地理坐标值 [-180, 180]")
+    @DecimalMax(value = "180.0", message = "最大经度必须是有效的地理坐标值 [-180, 180]")
     private Double maxLongitude;
 
+    /**
+     * 查询区域的最大纬度。
+     */
     @NotNull(message = "最大纬度不能为空")
+    @DecimalMin(value = "-90.0", message = "最大纬度必须是有效的地理坐标值 [-90, 90]")
+    @DecimalMax(value = "90.0", message = "最大纬度必须是有效的地理坐标值 [-90, 90]")
     private Double maxLatitude;
 
-    // 构造函数
+    /**
+     * 默认构造函数。
+     */
     public DensityQuery() {
     }
 
-    // 构造函数
+    /**
+     * 全参数构造函数。
+     */
     public DensityQuery(Double gridSize, LocalDateTime startTime, LocalDateTime endTime, Integer timeSlotMinutes,
                         Double minLongitude, Double minLatitude, Double maxLongitude, Double maxLatitude) {
         this.gridSize = gridSize;
@@ -51,30 +98,5 @@ public class DensityQuery {
         this.minLatitude = minLatitude;
         this.maxLongitude = maxLongitude;
         this.maxLatitude = maxLatitude;
-    }
-
-    public void validate() {
-        if (startTime == null || endTime == null || gridSize == null || timeSlotMinutes == null ||
-                minLongitude == null || minLatitude == null || maxLongitude == null || maxLatitude == null) {
-            throw new IllegalArgumentException("所有查询参数（包括地理边界）均不能为空");
-        }
-        if (endTime.isBefore(startTime)) {
-            throw new IllegalArgumentException("结束时间不能早于开始时间");
-        }
-        if (gridSize <= 0) {
-            throw new IllegalArgumentException("网格大小必须为正数");
-        }
-        if (timeSlotMinutes <= 0) {
-            throw new IllegalArgumentException("时间间隔必须为正数");
-        }
-        if (minLongitude >= maxLongitude) {
-            throw new IllegalArgumentException("最小经度必须小于最大经度");
-        }
-        if (minLatitude >= maxLatitude) {
-            throw new IllegalArgumentException("最小纬度必须小于最大纬度");
-        }
-         if (minLongitude < -180 || maxLongitude > 180 || minLatitude < -90 || maxLatitude > 90) {
-             throw new IllegalArgumentException("经纬度值超出有效范围");
-         }
     }
 }
