@@ -6,9 +6,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+// import lombok.AllArgsConstructor; // 移除，因为我们提供了自定义构造函数
 
 import java.time.LocalDateTime;
 
@@ -20,7 +20,6 @@ import java.time.LocalDateTime;
  */
 @Data
 @NoArgsConstructor
-@AllArgsConstructor // 添加全参构造函数，替代手写构造函数
 @ValidTimeRange(startTimeFieldName = "startTime", endTimeFieldName = "endTime", message = "若提供了时间范围，则结束时间必须在开始时间之后或与开始时间相同")
 public class FrequentPathQuery {
 
@@ -57,7 +56,7 @@ public class FrequentPathQuery {
      * 如果进行区域间分析 (F8)，此字段和 {@code regionB} 通常都需要提供。
      * 通过 {@link Valid} 注解对其内部字段进行级联校验。
      */
-    @Valid // 当regionA非null时，会校验Region对象内部的约束
+    @Valid
     private Region regionA = null;
 
     /**
@@ -65,9 +64,36 @@ public class FrequentPathQuery {
      * 如果进行区域间分析 (F8)，此字段和 {@code regionA} 通常都需要提供。
      * 通过 {@link Valid} 注解对其内部字段进行级联校验。
      */
-    @Valid // 当regionB非null时，会校验Region对象内部的约束
+    @Valid
     private Region regionB = null;
 
+    /**
+     * 用于F7（全市范围）查询的构造函数。
+     * @param k 返回的热门路径数量。
+     * @param minPathDistanceKM 路径的最小地理距离 (km)。
+     */
+    public FrequentPathQuery(Integer k, Double minPathDistanceKM) {
+        if (k != null && k > 0) { // 保留参数校验和默认值逻辑
+            this.k = k;
+        }
+        if (minPathDistanceKM != null && minPathDistanceKM >= 0) {
+            this.minPathDistanceKM = minPathDistanceKM;
+        }
+        // startTime, endTime, regionA, regionB 将使用字段声明时的默认值 (null)
+    }
+
+    /**
+     * 用于F8（区域间）查询的构造函数。
+     * @param k 返回的热门路径数量。
+     * @param minPathDistanceKM 路径的最小地理距离 (km)。
+     * @param regionA 起始区域。
+     * @param regionB 目标区域。
+     */
+    public FrequentPathQuery(Integer k, Double minPathDistanceKM, Region regionA, Region regionB) {
+        this(k, minPathDistanceKM); // 调用上面的构造函数
+        this.regionA = regionA;
+        this.regionB = regionB;
+    }
 
     /**
      * 辅助方法，判断当前查询是否为区域间查询 (F8)。
@@ -79,5 +105,4 @@ public class FrequentPathQuery {
     public boolean isRegionQuery() {
         return regionA != null && regionB != null;
     }
-
 }
