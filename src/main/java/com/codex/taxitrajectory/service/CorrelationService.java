@@ -4,7 +4,7 @@ import com.codex.taxitrajectory.model.core.Region;
 import com.codex.taxitrajectory.model.core.TaxiRecord;
 import com.codex.taxitrajectory.model.query.CorrelationQuery.RegionCorrelationQuery;
 import com.codex.taxitrajectory.model.query.CorrelationQuery.RegionSingleCorrelationQuery;
-import com.codex.taxitrajectory.model.result.RegionCorrelationResult;
+import com.codex.taxitrajectory.model.result.CorrelationResult;
 import com.codex.taxitrajectory.repository.TaxiRepository;
 import com.codex.taxitrajectory.utils.GeoUtils;
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ public class CorrelationService {
      * @param query 查询参数
      * @return 封装了每个时间槽内两个方向车流量的结果对象
      */
-    public RegionCorrelationResult analyzeTrafficFlowChangeBetweenRegions(RegionCorrelationQuery query) {
+    public CorrelationResult analyzeTrafficFlowChangeBetweenRegions(RegionCorrelationQuery query) {
         if (loggingEnabled) {
             logger.info("开始分析两个区域间车流量变化，查询参数：{}", query);
         }
@@ -96,7 +96,7 @@ public class CorrelationService {
             logger.info("车流量分析完成，总耗时：{} ms", totalAnalysisTime);
         }
 
-        RegionCorrelationResult result = new RegionCorrelationResult();
+        CorrelationResult result = new CorrelationResult();
         result.setTrafficFlowChange(flowChangeMap);
         return result;
     }
@@ -106,7 +106,7 @@ public class CorrelationService {
      * @param query 查询参数
      * @return 封装了每个时间槽内两个方向车流量的结果对象
      */
-    public RegionCorrelationResult analyzeTrafficFlowChangeWithOtherRegions(RegionSingleCorrelationQuery query) {
+    public CorrelationResult analyzeTrafficFlowChangeWithOtherRegions(RegionSingleCorrelationQuery query) {
         if (loggingEnabled) {
             logger.info("开始分析指定区域与其他区域的车流量变化，查询参数：{}", query);
         }
@@ -150,7 +150,7 @@ public class CorrelationService {
             logger.info("车流量分析完成，总耗时：{} ms", totalAnalysisTime);
         }
 
-        RegionCorrelationResult result = new RegionCorrelationResult();
+        CorrelationResult result = new CorrelationResult();
         result.setTrafficFlowChange(flowChangeMap);
         return result;
     }
