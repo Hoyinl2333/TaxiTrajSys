@@ -3,7 +3,7 @@ package com.codex.taxitrajectory.controller;
 // 确保导入的是重命名和修改后的查询类
 import com.codex.taxitrajectory.model.query.CorrelationQuery.RegionCorrelationQuery;
 import com.codex.taxitrajectory.model.query.CorrelationQuery.RegionSingleCorrelationQuery;
-import com.codex.taxitrajectory.model.result.RegionCorrelationResult;
+import com.codex.taxitrajectory.model.result.CorrelationResult;
 import com.codex.taxitrajectory.service.CorrelationService;
 import jakarta.servlet.http.HttpServletRequest; // 导入 HttpServletRequest
 import jakarta.validation.Valid; // 导入 @Valid
@@ -36,7 +36,7 @@ public class CorrelationController {
      * @return 包含分析结果的ResponseEntity。
      */
     @PostMapping("/trafficFlowChangeBetweenRegions")
-    public ResponseEntity<RegionCorrelationResult> analyzeTrafficFlowChangeBetweenRegions(
+    public ResponseEntity<CorrelationResult> analyzeTrafficFlowChangeBetweenRegions(
             @RequestBody @Valid RegionCorrelationQuery query, HttpServletRequest request) { // 添加 @Valid 和 HttpServletRequest
 
         String requestId = UUID.randomUUID().toString().substring(0, 8);
@@ -48,7 +48,7 @@ public class CorrelationController {
         // 包括其内部的 @Valid Region (如果按我们之前重构的那样) 和类级别的 @ValidTimeRange
         logger.info("请求参数 : ID=[{}], 参数=[{}]", requestId, query.toString());
 
-        RegionCorrelationResult result = unifiedRegionCorrelationService.analyzeTrafficFlowChangeBetweenRegions(query);
+        CorrelationResult result = unifiedRegionCorrelationService.analyzeTrafficFlowChangeBetweenRegions(query);
 
         long durationMillis = System.currentTimeMillis() - startTimeMillis;
         logger.info("响应结果 : ID=[{}], 状态码=[{}], 处理耗时=[{}ms]", requestId, HttpStatus.OK.value(), durationMillis);
@@ -68,7 +68,7 @@ public class CorrelationController {
      * @return 包含分析结果的ResponseEntity。
      */
     @PostMapping("/trafficFlowChangeWithOtherRegions")
-    public ResponseEntity<RegionCorrelationResult> analyzeTrafficFlowChangeWithOtherRegions(
+    public ResponseEntity<CorrelationResult> analyzeTrafficFlowChangeWithOtherRegions(
             @RequestBody @Valid RegionSingleCorrelationQuery query, HttpServletRequest request) { // 添加 @Valid 和 HttpServletRequest
 
         String requestId = UUID.randomUUID().toString().substring(0, 8);
@@ -80,7 +80,7 @@ public class CorrelationController {
         // 包括其内部的字段级注解和类级别的 @ValidTimeRange 与 @ValidGeoBoundingBox
         logger.info("请求参数 : ID=[{}], 参数=[{}]", requestId, query.toString());
 
-        RegionCorrelationResult result = unifiedRegionCorrelationService.analyzeTrafficFlowChangeWithOtherRegions(query);
+        CorrelationResult result = unifiedRegionCorrelationService.analyzeTrafficFlowChangeWithOtherRegions(query);
 
         long durationMillis = System.currentTimeMillis() - startTimeMillis;
         logger.info("响应结果 : ID=[{}], 状态码=[{}], 处理耗时=[{}ms]", requestId, HttpStatus.OK.value(), durationMillis);

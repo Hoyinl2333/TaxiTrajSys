@@ -26,13 +26,12 @@ public class TxtTaxiRecordParser implements TaxiRecordParser {
     private static final Logger log = LoggerFactory.getLogger(TxtTaxiRecordParser.class);
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    @Value("${logging.repository.enable:true}")
+    @Value("${logging.repository.enabled:true}")
     private boolean enableLogging;
     private static final double COORDINATE_THRESHOLD = 1e-4;
 
-    // 旧的 parse 方法保持不变，或者根据需要调整
     @Override
-    public NavigableMap<LocalDateTime, TaxiRecord> parse(Resource resource) throws IOException { // 增加 throws IOException
+    public NavigableMap<LocalDateTime, TaxiRecord> parse(Resource resource) throws IOException {
         NavigableMap<LocalDateTime, TaxiRecord> map = new TreeMap<>();
         // try-with-resources 确保 BufferedReader 被关闭
         try (BufferedReader reader = new BufferedReader(
@@ -41,7 +40,6 @@ public class TxtTaxiRecordParser implements TaxiRecordParser {
             int lineNumber = 0;
             while ((line = reader.readLine()) != null) {
                 lineNumber++;
-                // ... (其余解析逻辑与原来类似，但错误处理可能需要调整，这里是收集到map)
                 String[] parts = line.split(",");
                 if (parts.length != 4) {
                     if (enableLogging) log.warn("行格式错误（跳过）{}: {}", lineNumber, line);
@@ -62,16 +60,16 @@ public class TxtTaxiRecordParser implements TaxiRecordParser {
                     }
                 }
             }
-        } catch (IOException e) { // 捕获并重新抛出或记录
+        } catch (IOException e) {
             if (enableLogging) {
                 log.error("文件读取失败：{} for resource: {}", e.getMessage(), resource.getFilename());
             }
-            throw e; // 或者返回空map/自定义异常
+            throw e;
         }
         return map;
     }
 
-    // 新增的流式解析方法
+    // 流式解析方法
     @Override
     public Stream<TaxiRecord> parseAsStream(Resource resource) throws IOException {
         BufferedReader reader;
@@ -81,7 +79,7 @@ public class TxtTaxiRecordParser implements TaxiRecordParser {
             if (enableLogging) {
                 log.error("无法打开资源进行流式解析: {} - {}", resource.getFilename(), e.getMessage());
             }
-            throw e; // 或者返回 Stream.empty()
+            throw e;
         }
 
         Iterator<TaxiRecord> iterator = new Iterator<>() {
@@ -162,15 +160,13 @@ public class TxtTaxiRecordParser implements TaxiRecordParser {
             }
         };
 
-        // StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false)
-        // 为了确保reader在流处理完毕或异常时关闭，需要更复杂的处理，
-        // 或者让调用者负责关闭流（如果Stream封装了Closeable资源）。
-        // 一个简单的方式是让Stream在关闭时关闭reader。
         return StreamSupport.stream(iteratorToSpliterator(iterator), false).onClose(() -> {
             try {
                 reader.close();
             } catch (IOException e) {
-                if (enableLogging) log.error("流式解析：关闭reader (onClose)失败 {}: {}", resource.getFilename(), e.getMessage());
+                if (enableLogging) {
+                    log.error("流式解析：关闭reader (onClose)失败 {}: {}", resource.getFilename(), e.getMessage());
+                }
             }
         });
     }
