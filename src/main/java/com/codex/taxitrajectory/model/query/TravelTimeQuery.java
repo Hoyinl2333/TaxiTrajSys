@@ -16,9 +16,8 @@ import java.time.LocalDateTime;
  * 使用JSR 303注解及自定义注解进行参数校验。
  */
 @Data
-@NoArgsConstructor // 添加无参构造函数
+@NoArgsConstructor
 @ValidTimeRange
-@ValidGeoBoundingBox
 public class TravelTimeQuery {
 
     /**
@@ -26,6 +25,7 @@ public class TravelTimeQuery {
      * 不能为空，且其内部定义的地理边界必须有效。
      */
     @NotNull(message = "起始区域A不能为空")
+    @Valid
     private Region regionA;
 
     /**
@@ -33,6 +33,7 @@ public class TravelTimeQuery {
      * 不能为空，且其内部定义的地理边界必须有效。
      */
     @NotNull(message = "结束区域B不能为空")
+    @Valid
     private Region regionB;
 
     /**
