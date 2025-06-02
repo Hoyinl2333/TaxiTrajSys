@@ -126,6 +126,8 @@ public class RegionQueryServiceTest {
         double averageMs = totalNanoTime / (iterations * 1_000_000.0);
         System.out.println("Average query time over " + iterations + " iterations: " + averageMs + " ms");
 
+        // 可根据实际预期设置响应时间阈值，例如要求在500ms以内
+        assertTrue(averageMs < 500, "Average query time should be under 500ms");
     }
 
     /**

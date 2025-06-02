@@ -171,10 +171,4 @@ class ValidationControllerTest {
                         .content(objectMapper.writeValueAsString(validQuery)))
                 .andExpect(status().isOk());
     }
-
-    @AfterEach
-    public void cleanUpAfterTest() {
-        System.gc();
-        System.out.println("测试完成，已执行清理操作。");
-    }
 }

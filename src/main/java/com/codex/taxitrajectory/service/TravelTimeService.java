@@ -258,8 +258,8 @@ public class TravelTimeService {
                             break; // 提取失败，跳出 while 循环，不尝试更新
                         }
 
-                        // 创建新的 TravelTimeResult 对象
-                        TravelTimeResult newResult = new TravelTimeResult(tripPath, duration,true);
+                        // 创建新的 TravelTimeResult 对象 (使用原 ShortestPathInfo 的构造函数)
+                        TravelTimeResult newResult = new TravelTimeResult(tripPath, duration);
 
                         // 尝试原子更新：如果 holder 中的值仍然是 existingResult，则将其替换为 newResult
                         if (finalResultHolder.compareAndSet(existingResult, newResult)) {

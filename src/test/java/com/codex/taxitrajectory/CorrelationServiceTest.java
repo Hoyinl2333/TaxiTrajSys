@@ -4,7 +4,7 @@ import com.codex.taxitrajectory.model.core.Region;
 // 确保导入重命名和修改后的查询类
 import com.codex.taxitrajectory.model.query.CorrelationQuery.RegionCorrelationQuery;
 import com.codex.taxitrajectory.model.query.CorrelationQuery.RegionSingleCorrelationQuery;
-import com.codex.taxitrajectory.model.result.CorrelationResult;
+import com.codex.taxitrajectory.model.result.RegionCorrelationResult;
 import com.codex.taxitrajectory.repository.TaxiRepository; // 实际注入
 import com.codex.taxitrajectory.service.CorrelationService;
 import org.junit.jupiter.api.AfterEach;
@@ -64,7 +64,7 @@ class CorrelationServiceTest {
         query.setRegion2(regionB_f5);
 
         logger.info("F5测试: 执行查询 {}", query);
-        CorrelationResult result = correlationService.analyzeTrafficFlowChangeBetweenRegions(query);
+        RegionCorrelationResult result = correlationService.analyzeTrafficFlowChangeBetweenRegions(query);
 
         assertNotNull(result, "F5分析结果不应为null");
         assertNotNull(result.getTrafficFlowChange(), "F5车流量变化Map不应为null");
@@ -92,7 +92,7 @@ class CorrelationServiceTest {
         query.setBottomRightLatitude(region_f6.getMinLat());
 
         logger.info("F6测试: 执行查询 {}", query);
-        CorrelationResult result = correlationService.analyzeTrafficFlowChangeWithOtherRegions(query);
+        RegionCorrelationResult result = correlationService.analyzeTrafficFlowChangeWithOtherRegions(query);
 
         assertNotNull(result, "F6分析结果不应为null");
         assertNotNull(result.getTrafficFlowChange(), "F6车流量变化Map不应为null");

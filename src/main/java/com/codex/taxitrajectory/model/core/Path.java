@@ -1,43 +1,41 @@
 package com.codex.taxitrajectory.model.core;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode; // 使用 CallSuper=true
+import lombok.ToString; // 使用 CallSuper=true
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * 表示一条抽象的行驶路径。
- * <p>
- * 该路径由一个有序的、不可变的网格单元ID序列 ({@code List<String>}) 定义。
- * 每个ID通常格式为 "row,col"，代表车辆经过的网格单元。
- * </p>
+ * 表示一条路径，现在由一系列有序的网格单元 ID 构成。
  */
 @Data
+@EqualsAndHashCode // 默认情况下，Lombok 会基于所有非静态、非 transient 字段生成 equals/hashCode
+@ToString // 默认情况下，Lombok 会基于所有非静态、非 transient 字段生成 toString
 public class Path {
 
-    /**
-     * 组成路径的网格单元ID的有序列表。
-     * 例如：["0,1", "0,2", "1,2"]。
-     * 此列表在构造后是不可变的。
-     */
+    // 核心表示：网格单元 ID 的有序列表 (例如 "row,col")
     private final List<String> cellIdSequence;
 
+    // (可选) 保留原始点或首尾点信息，如果需要的话
+    // private List<GPSPoint> originalPoints;
+    // private GPSPoint startPoint;
+    // private GPSPoint endPoint;
 
     /**
-     * 构造函数，根据提供的网格单元ID序列创建一个新的 Path 对象。
-     * <p>
-     * 传入的 {@code cellIdSequence} 列表将被包装为一个不可修改的列表，
-     * 以确保 {@code Path} 对象内部状态的不可变性。
-     * </p>
-     *
-     * @param cellIdSequence 一个网格单元ID的列表。不应为 null。
-     * @throws NullPointerException 如果 cellIdSequence 为 null。
+     * 构造函数，接收一个不可变的网格单元 ID 序列。
+     * @param cellIdSequence 不可变的网格单元 ID 列表。
      */
     public Path(List<String> cellIdSequence) {
-        if (cellIdSequence == null) {
-            throw new NullPointerException("路径的网格单元ID序列 (cellIdSequence) 不能为空。");
-        }
-        this.cellIdSequence = List.copyOf(cellIdSequence);
+        // 确保传入的是不可变列表或创建一个副本
+        this.cellIdSequence = Collections.unmodifiableList(cellIdSequence);
     }
+
+    // Getter 由 @Data 生成
+
+    // 注意: Lombok 的 @Data 会自动生成 equals, hashCode, toString。
+    // 它们现在会基于 cellIdSequence 来判断两个 Path 是否相等。
+    // 如果你添加了其他字段（如 originalPoints），并且希望它们也参与比较，
+    // 可能需要手动实现 equals/hashCode，或者使用 Lombok 的 @EqualsAndHashCode(callSuper=true) 等注解。
 }
