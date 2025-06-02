@@ -25,7 +25,7 @@ public class DensityAnalysisService {
     private static final Logger logger = LoggerFactory.getLogger(DensityAnalysisService.class);
 
     @Value("${logging.service.enabled:true}")
-    private boolean enableLogging; // 日志开关，可以通过配置文件控制详细日志的输出
+    private boolean enableLogging;
 
     private final TaxiRepository taxiRepository;
 
@@ -36,14 +36,6 @@ public class DensityAnalysisService {
 
     public DensityAnalysisResult analyzeTrafficDensity(DensityQuery query) {
         long globalStartTimeMs = System.currentTimeMillis();
-//        logger.info("======================");
-//        logger.info("开始处理车流密度分析请求. 查询参数: {}", query);
-
-        // 1. 参数校验 (在 DensityQuery 内部或此处进行)
-        // DensityQuery 的 @Valid 会触发 JSR 303 注解校验
-
-        // 2. 创建网格 (使用查询参数中用户定义的边界)
-        // 注意: DensityQuery 需已更新，包含 minLongitude, minLatitude, maxLongitude, maxLatitude 字段
         logger.info("使用用户定义的地理边界进行网格构建: MinLon={}, MinLat={}, MaxLon={}, MaxLat={}, GridSizeKm={}",
                 query.getMinLongitude(), query.getMinLatitude(), query.getMaxLongitude(), query.getMaxLatitude(), query.getGridSize());
 
@@ -59,18 +51,15 @@ public class DensityAnalysisService {
             logger.info("网格构建完成. 行数: {}, 列数: {}. 耗时: {} ms", grid.getRows(), grid.getCols(), (System.currentTimeMillis() - gridBuildStartMs));
         }
 
-        // 3. 初始化用于存储当前请求密度数据的局部变量 (线程安全)
         ConcurrentHashMap<LocalDateTime, ConcurrentHashMap<String, AtomicInteger>> currentRequestDensityData = new ConcurrentHashMap<>();
 
         LocalDateTime queryStartTime = query.getStartTime();
         LocalDateTime queryEndTime = query.getEndTime();
         int timeSlotMinutes = query.getTimeSlotMinutes();
 
-        // 4. 获取所有出租车ID并进行并行处理
         Set<String> allTaxiIds = taxiRepository.getAllTaxiIds();
         if (allTaxiIds == null || allTaxiIds.isEmpty()) {
             logger.warn("未找到任何出租车ID，无法进行密度分析。");
-            // 返回一个表示没有数据的空结果
             return createEmptyResult(query, grid, generateTimeSlots(queryStartTime, queryEndTime, timeSlotMinutes));
         }
         logger.info("开始处理 {} 辆出租车的轨迹数据...", allTaxiIds.size());
@@ -96,7 +85,6 @@ public class DensityAnalysisService {
                         .forEach(record -> {
                             GridCell cell = grid.getCellByPosition(record.getLongitude(), record.getLatitude());
                             if (cell == null) { // 跳过网格区域外的点
-                                // logger.trace("记录点 ({},{}) 在网格区域外，已跳过.", record.getLongitude(), record.getLatitude());
                                 return;
                             }
 
@@ -137,7 +125,7 @@ public class DensityAnalysisService {
             logger.info("全部出租车数据流处理完成. 总耗时: {} ms", (System.currentTimeMillis() - dataProcessingStartMs));
         }
 
-        // 5. 生成时间槽列表并计算最终密度图
+        //生成时间槽列表并计算最终密度图
         List<LocalDateTime> timeSlots = generateTimeSlots(queryStartTime, queryEndTime, timeSlotMinutes);
         logger.info("已生成 {} 个时间槽.", timeSlots.size());
 
@@ -147,7 +135,7 @@ public class DensityAnalysisService {
             logger.info("最终密度图计算完成. 耗时: {} ms", (System.currentTimeMillis() - densityMapCalcStartMs));
         }
 
-        // 6. 组装并返回结果
+        //组装并返回结果
         DensityAnalysisResult result = new DensityAnalysisResult();
         result.setRows(grid.getRows());
         result.setCols(grid.getCols());
@@ -177,7 +165,7 @@ public class DensityAnalysisService {
     }
 
     private LocalDateTime roundToTimeSlot(LocalDateTime timestamp, int minutes) {
-        if (minutes <= 0) { // 防御性编程，避免除零错误
+        if (minutes <= 0) {
             logger.warn("时间槽分钟数无效 ({})，将返回原始时间戳的不规整时间槽。", minutes);
             return timestamp.withSecond(0).withNano(0);
         }
@@ -208,7 +196,7 @@ public class DensityAnalysisService {
                     }
                 }
             }
-            finalMap.put(timeSlot, cellDensity); // 即使cellDensity为空map，也为该时间槽放入记录
+            finalMap.put(timeSlot, cellDensity);
 
             if (enableLogging && nonEmptyCellsInSlot > 0) {
                 logger.debug("时间槽 [{}] 转换后包含 {} 个非空密度单元.", timeSlot, nonEmptyCellsInSlot);

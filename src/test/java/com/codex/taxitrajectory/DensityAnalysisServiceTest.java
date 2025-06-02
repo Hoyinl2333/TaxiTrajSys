@@ -24,8 +24,6 @@ public class DensityAnalysisServiceTest {
 
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    // 为测试定义一个常用的地理边界 (例如，北京市内的一个区域)
-    // 这些值应确保您的测试数据源在该区域内有数据
     private final double TEST_MIN_LON = 116.30;
     private final double TEST_MIN_LAT = 39.85;
     private final double TEST_MAX_LON = 116.50; // 大约是TEST_MIN_LON东边约17km
@@ -65,18 +63,8 @@ public class DensityAnalysisServiceTest {
         int totalCells = result.getRows() * result.getCols();
         assertTrue(totalCells > 0, "网格单元数量应大于0");
         System.out.printf("[基础测试] 网格行列数：%d x %d，总计：%d 个网格%n", result.getRows(), result.getCols(), totalCells);
-
-
-        // 依赖于测试数据，以下断言可能需要调整
-        // 假设在这么大范围和长时间内，至少应有一些数据
         Map<String, Integer> firstSlotDensity = result.getDensityMap().get(result.getTimeSlots().get(0));
         assertNotNull(firstSlotDensity, "第一个时间槽的密度数据不应为空");
-
-        // 如果您的测试数据源在此时间/区域内保证有数据
-        // assertFalse(firstSlotDensity.isEmpty(), "第一个时间槽的密度数据映射不应为空集");
-        // boolean hasTraffic = firstSlotDensity.values().stream().anyMatch(d -> d > 0);
-        // assertTrue(hasTraffic, "在第一个时间槽，应至少有一个网格的车流密度大于0");
-
         printResultSummary(query, result);
     }
 
@@ -98,14 +86,9 @@ public class DensityAnalysisServiceTest {
         System.out.printf("[多时间槽测试] 网格行列数：%d x %d，总计：%d 个网格%n", result.getRows(), result.getCols(), totalCells);
 
 
-        // 依赖于测试数据
         for (LocalDateTime slot : result.getTimeSlots()) {
             Map<String, Integer> slotDensity = result.getDensityMap().get(slot);
             assertNotNull(slotDensity, "时间槽 " + slot + " 对应的密度数据不应为空");
-            // 如果确定该时间槽内必有数据:
-            // assertFalse(slotDensity.isEmpty(), "时间槽 " + slot + " 的密度数据映射不应为空集");
-            // long nonEmptyCells = slotDensity.values().stream().filter(d -> d > 0).count();
-            // assertTrue(nonEmptyCells > 0, "时间槽 " + slot + " 至少应有一个网格的车流密度大于0");
         }
         printResultSummary(query, result);
     }
@@ -116,7 +99,6 @@ public class DensityAnalysisServiceTest {
     public void testEdgeCase_NoTaxiDataOrNoMatchingData() {
         DensityQuery query = createValidBaseQuery();
         // 设置一个不太可能有数据的遥远时间或非常小的、偏僻的区域
-        // 或者，如果可以mock TaxiRepository，让其返回空数据
         query.setStartTime(LocalDateTime.parse("1900-01-01 00:00:00", formatter));
         query.setEndTime(LocalDateTime.parse("1900-01-01 01:00:00", formatter));
         query.setMinLongitude(0.0); query.setMinLatitude(0.0);

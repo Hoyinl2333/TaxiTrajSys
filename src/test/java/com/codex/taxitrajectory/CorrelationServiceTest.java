@@ -22,7 +22,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest // 加载完整应用上下文
+@SpringBootTest
 class CorrelationServiceTest {
 
     private static final Logger logger = LoggerFactory.getLogger(CorrelationServiceTest.class);

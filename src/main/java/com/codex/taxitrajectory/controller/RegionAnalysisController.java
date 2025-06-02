@@ -17,7 +17,7 @@ import java.util.UUID;
 @RequestMapping("/region")
 public class RegionAnalysisController {
 
-    private static final Logger logger = LoggerFactory.getLogger(RegionAnalysisController.class); // 添加 logger
+    private static final Logger logger = LoggerFactory.getLogger(RegionAnalysisController.class);
     private final RegionQueryService regionQueryService;
 
     public RegionAnalysisController(RegionQueryService regionQueryService) {
@@ -31,16 +31,15 @@ public class RegionAnalysisController {
      * @param request HTTP请求对象。
      * @return 包含区域内出租车数量和GPS点列表的ResponseEntity。
      */
-    @PostMapping("/count") // 修改为 @PostMapping
+    @PostMapping("/count")
     public ResponseEntity<RegionQueryResult> countTaxisInRegion(
-            @RequestBody @Valid RegionQuery query, HttpServletRequest request) { // 修改为 @RequestBody @Valid
+            @RequestBody @Valid RegionQuery query, HttpServletRequest request) { @Valid
 
         String requestId = UUID.randomUUID().toString().substring(0, 8);
         long startTimeMillis = System.currentTimeMillis();
 
         logger.info("==================== 请求处理开始 : API=[区域范围查找F3] ====================");
         logger.info("接收请求 : 方法=[{}], 路径=[{}], 请求ID=[{}]", request.getMethod(), request.getRequestURI(), requestId);
-        // RegionQuery DTO现在由 @Valid 自动校验，包括其内部的 @ValidTimeRange 和 @ValidGeoBoundingBox
         logger.info("请求参数 : ID=[{}], 参数=[{}]", requestId, query.toString());
 
 

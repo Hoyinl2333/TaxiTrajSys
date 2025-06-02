@@ -76,7 +76,6 @@ public class RegionQueryService {
                 if (enableLogging) {
                     logger.error("区域查询区域时，处理出租车 {} 的数据流发生IO异常: {}", taxiId, e.getMessage(), e);
                 }
-                // 根据策略决定是否继续处理其他出租车，这里选择继续
             } catch (Exception e) {
                 // 捕获流操作中可能发生的其他运行时异常
                 if (enableLogging) {
