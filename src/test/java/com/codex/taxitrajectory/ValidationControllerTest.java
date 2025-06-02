@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.LocalDateTime;
 
+import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -31,14 +32,14 @@ class ValidationControllerTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private ObjectMapper objectMapper; // Spring Boot会自动配置一个ObjectMapper
+    private ObjectMapper objectMapper;
 
     // --- 测试 @ValidTimeRange ---
 
     @Test
     @DisplayName("测试 @ValidTimeRange - 当startTime晚于endTime时应校验失败")
     void testValidTimeRange_whenStartTimeAfterEndTime_shouldFailValidation() throws Exception {
-        Region validRegion = new Region(39.0, 40.0, 116.0, 117.0);
+        Region validRegion = new Region(116.0, 36.0, 117.0, 40.0);
         TravelTimeQuery invalidQuery = new TravelTimeQuery(
                 validRegion,
                 validRegion,
@@ -127,32 +128,29 @@ class ValidationControllerTest {
     @Test
     @DisplayName("测试 @ValidGeoBoundingBox (应用于TravelTimeQuery中的Region) - Region内部校验失败")
     void testValidGeoBoundingBox_onNestedRegion_shouldFail() throws Exception {
-        // TravelTimeQuery 有 @Valid private Region regionA;
-        // Region 类本身有 @ValidGeoBoundingBox
-        Region invalidRegionA = new Region(
-                40.0, // minLat (大于maxLat)
-                39.0, // maxLat
-                116.0, // minLon
-                117.0  // maxLon
-        );
-        Region validRegionB = new Region(39.0, 40.0, 116.0, 117.0);
+        Region invalidRegionA = new Region(118.0,39.0,116.0,120.0);
+        Region invalidRegionB = new Region(115.0, 100.0, 117.0, 80.0);
 
-        TravelTimeQuery queryWithInvalidRegionA = new TravelTimeQuery(
+        TravelTimeQuery query = new TravelTimeQuery(
                 invalidRegionA,
-                validRegionB,
+                invalidRegionB,
                 LocalDateTime.of(2024, 1, 1, 8, 0, 0),
                 LocalDateTime.of(2024, 1, 1, 10, 0, 0)
         );
 
         ResultActions resultActions = mockMvc.perform(post("/travelTime/analyze")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(queryWithInvalidRegionA)))
+                        .content(objectMapper.writeValueAsString(query)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.error").value("Validation Failed"))
-                // 错误信息会指向具体的字段路径
-                .andExpect(jsonPath("$.details[0]").value("regionA: 无效的地理边界框：最小经纬度必须小于对应的最大经纬度"));
-
+                .andExpect(jsonPath("$.details", containsInAnyOrder(
+                        "regionA: 无效的地理边界框：最小经纬度必须小于对应的最大经纬度", // invalidRegionA: minLon > maxLon
+                        "regionA.maxLat: 最大纬度必须是有效的地理坐标值 [-90, 90]",      // invalidRegionA: maxLat=120
+                        "regionB.minLat: 最小纬度必须是有效的地理坐标值 [-90, 90]",      // invalidRegionB: minLat=100
+                        "regionB: 无效的地理边界框：最小经纬度必须小于对应的最大经纬度" // invalidRegionB: minLat > maxLat
+                )))
+                .andExpect(jsonPath("$.details", hasSize(4))); // 预期4个错误
 
         System.out.println("testValidGeoBoundingBox_onNestedRegion_shouldFail 响应: " + resultActions.andReturn().getResponse().getContentAsString());
     }
