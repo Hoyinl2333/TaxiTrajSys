@@ -9,8 +9,9 @@ if (typeof window.allFeatureOverlays === 'undefined') {
 window.allFeatureOverlays["F1_轨迹点"] = [];
 console.log("F1-TRAJECTORY: 已在 window.allFeatureOverlays 中初始化 'F1_轨迹点' 数组。");
 
-
-
+/**
+ * F1: 出租车轨迹查询
+ */
 function fetchTaxiTrajectory() {
     var taxiId = document.getElementById("taxiId").value;
     var resultDiv = document.getElementById("f1_result");
@@ -57,7 +58,7 @@ function fetchTaxiTrajectory() {
                 return;
             }
 
-
+            // 替换原来的 convertCoordinates 块
             if (points.length > 0) {
                 points.forEach((point) => {
                     // 直接绘图（不再转换坐标）

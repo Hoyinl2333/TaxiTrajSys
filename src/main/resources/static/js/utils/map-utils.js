@@ -1,3 +1,5 @@
+// 文件: static/js/utils/map-utils.js
+
 // --- 全局变量 ---
 var map; // 地图实例
 var beijingBoundaryOverlays = []; // 存储北京市边界覆盖物, 这个通常是静态的，不参与常规清除
@@ -11,6 +13,7 @@ if (typeof window.allFeatureOverlays === 'undefined') {
 }
 
 // 全局的 'overlays' 数组不再由 map-utils 直接主要管理，而是由各模块通过 allFeatureOverlays 间接管理
+// 为了兼容旧的直接使用 overlays 的代码（如果有），可以保留它，但理想情况下它应该为空
 var overlays = [];
 
 
@@ -193,7 +196,8 @@ function clearOverlays() {
       console.warn("MAP-UTILS: window.allFeatureOverlays 未定义或不是对象，无法进行模块化清除。");
     }
 
-    // 为了安全起见，也清除一下旧的全局 overlays 数组
+    // 为了安全起见，也清除一下旧的全局 overlays 数组（如果还有代码在用它）
+    // 理想情况下，这个数组应该在所有模块迁移完毕后不再被使用。
     if (Array.isArray(window.overlays) && window.overlays.length > 0) {
       console.warn("MAP-UTILS: 旧的全局 'overlays' 数组中仍有覆盖物，正在清除。请确保所有模块已迁移到 allFeatureOverlays 管理。");
       for (let i = 0; i < window.overlays.length; i++) {

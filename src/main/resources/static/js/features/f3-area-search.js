@@ -1,3 +1,5 @@
+// 文件: static/js/features/f3-area-search.js
+
 // --- F3模块初始化 ---
 // 确保全局覆盖物管理器已初始化
 if (typeof window.allFeatureOverlays === 'undefined') {
@@ -11,7 +13,7 @@ window.allFeatureOverlays["F3_区域矩形"] = [];
  * F3: 区域范围查找
  */
 function searchTaxisInArea() {
-    // 获取表单输入值 (假设值总是存在且格式正确，由后端校验)
+    // 1. 获取表单输入值 (假设值总是存在且格式正确，由后端校验)
     var startTimeValue = document.getElementById("f3_startTime").value;
     var endTimeValue = document.getElementById("f3_endTime").value;
     var topLeftLng = Number.parseFloat(document.getElementById("f3_topLeftLng").value);
@@ -23,7 +25,7 @@ function searchTaxisInArea() {
     resultDiv.innerHTML = "<p>正在查询区域内的出租车数量...</p>";
 
     // --- 关键：在执行任何操作前，调用全局清除函数 ---
-    clearOverlays();
+    clearOverlays(); // 假设 clearOverlays 函数总是可用的
 
     // 绘制查询区域矩形
     var minLng = Math.min(topLeftLng, bottomRightLng);
@@ -46,11 +48,11 @@ function searchTaxisInArea() {
         fillOpacity: 0.2
     });
 
-    map.addOverlay(polygon);
+    map.addOverlay(polygon); // 假设 map 对象和 addOverlay 方法总是可用的
     // --- 关键：将创建的覆盖物添加到 F3 在全局管理器中的专属数组 ---
     window.allFeatureOverlays["F3_区域矩形"].push(polygon);
 
-    map.setViewport(polygonPoints);
+    map.setViewport(polygonPoints); // 假设 setViewport 方法总是可用的
 
     // 准备API请求参数
     const requestBody = {
@@ -75,7 +77,7 @@ function searchTaxisInArea() {
     })
         .then(data => {
             const f3ResultDiv = document.getElementById("f3_result");
-            //  data 和 data.taxiCount 总是按预期结构返回
+            // 假设 data 和 data.taxiCount 总是按预期结构返回
             f3ResultDiv.innerHTML = `<p>在指定时间段和区域内的出租车数量为: ${data.taxiCount} 辆</p>`;
         })
         .catch(error => {
