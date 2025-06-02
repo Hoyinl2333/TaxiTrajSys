@@ -1,13 +1,3 @@
-// 文件: static/js/features/f4-density.js
-/**
- * Taxi Trajectory Density Analysis Frontend Logic (F4)
- *
- * TARGET STATE:
- * - Integrates with a global overlay management system (window.allFeatureOverlays).
- * - Retains the working density color display logic (including time key fallback).
- * - Calls global clearOverlays() at the beginning of analysis.
- * - Relies on global clearOverlays() to clear its overlays via window.allFeatureOverlays.
- */
 ;((BMapGL, window, document) => {
   // --- 1. 配置信息 ---
   const API_BASE_URL = window.location.hostname === "localhost" ? "http://localhost:8080" : "";
@@ -17,9 +7,7 @@
   if (typeof window.allFeatureOverlays === 'undefined') {
     window.allFeatureOverlays = {};
   }
-  // 确保这些键与 map-utils.js 中 clearOverlays 函数处理 F4 的逻辑一致（如果它有特定逻辑的话）
-  // 或者，如果 map-utils.js 的 clearOverlays 通用地遍历所有 allFeatureOverlays 的属性，则键名具有一定灵活性。
-  // 我们之前约定的是 map-utils.js 会通用地遍历。
+
   window.allFeatureOverlays["F4_查询边界"] = null;
   window.allFeatureOverlays["F4_密度单元格"] = [];
   window.allFeatureOverlays["F4_图例"] = null;
@@ -40,11 +28,6 @@
     densityResult: null,
     currentQueryInputParams: null,
     currentTimeIndex: 0,
-    // gridCellPolygons: new Map(), // 仍然用于高效更新颜色，但其成员也是allFeatureOverlays的一部分
-    // 修改：为了简化，并且因为 drawGrid 每次都重新创建单元格，
-    // 我们可以直接从 window.allFeatureOverlays["F4_密度单元格"] 中通过 _f4_cellId 查找来更新。
-    // 但保留 appState.gridCellPolygons (Map: "r,c" -> Polygon) 依然是最高效的更新方式，
-    // 只需要确保这个Map中的Polygon对象和allFeatureOverlays中的是同一个对象。
     gridCellPolygons: new Map(), // 用于按 cellId ("r,c") 快速查找对应的 Polygon 对象进行颜色更新
     globalEffectiveMaxDensity: 0,
   };
@@ -54,7 +37,7 @@
     // if (ui.commonResultDiv) ui.commonResultDiv.innerHTML = ""; // 确认是否需要
     showLoading(true, "正在向服务器请求分析数据...");
     try {
-      // 使用全局的 fetchApi (假设它在 apiService.js 中定义并能处理错误显示)
+      // 使用全局的 fetchApi
       const responseData = await fetchApi(API_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -82,9 +65,6 @@
       return true;
     },
 
-    // mapVisualizer.clearAllOverlays() 方法不再需要。
-    // 清除工作由 handleAnalyzeDensity -> global clearOverlays() -> map-utils.js 清理 allFeatureOverlays 来完成。
-    // appState.gridCellPolygons.clear() 将在 handleAnalyzeDensity 开始时执行。
 
     drawGrid(gridResultData, queryInputParams) {
       if (!appState.mapInstance) { console.error("F4-DENSITY: 地图未初始化，无法绘制网格。"); return; }
@@ -102,10 +82,10 @@
         strokeColor: "#1E90FF", strokeWeight: 2, strokeOpacity: 0.9, fillOpacity: 0,
       });
       appState.mapInstance.addOverlay(borderPolygon);
-      // **修改**: 存储到全局管理器
+      // 存储到全局管理器
       window.allFeatureOverlays["F4_查询边界"] = borderPolygon;
 
-      // 清空F4内部的快速查找Map，因为我们要重新填充它
+      // 清空F4内部的快速查找Map
       appState.gridCellPolygons.clear();
       const newDensityCells = []; // 临时数组，用于本次绘制的单元格
 
@@ -135,7 +115,7 @@
           });
           appState.mapInstance.addOverlay(cellPolygon);
 
-          // **修改**: 同时存入F4内部的Map和全局管理器的数组
+          // 同时存入F4内部的Map和全局管理器的数组
           const cellId = `${r},${c}`;
           appState.gridCellPolygons.set(cellId, cellPolygon);
           newDensityCells.push(cellPolygon);
@@ -233,9 +213,8 @@
       // console.log("F4-DENSITY: Legend added and stored globally.");
     },
 
-    // removeLegend() 不再需要由外部直接调用，全局 clearOverlays 会处理 window.allFeatureOverlays["F4_图例"]
 
-    fitMapToArea(queryInputParams) { /* ... 保持您工作版本中的实现 ... */
+    fitMapToArea(queryInputParams) {
       if (!appState.mapInstance || !queryInputParams) return;
       const { minLongitude, minLatitude, maxLongitude, maxLatitude } = queryInputParams;
       const sw = new BMapGL.Point(minLongitude, minLatitude);
@@ -251,15 +230,15 @@
   };
 
   // --- 6. UI 更新与消息显示函数 ---
-  function showLoading(isLoading, message = "正在处理...") { /* ...保持您工作版本中的实现... */
+  function showLoading(isLoading, message = "正在处理...") {
     if (!ui.resultDiv) return;
     ui.resultDiv.innerHTML = isLoading ? `<p>${escapeHtml(message)} <span class="loading-spinner"></span></p>` : "";
   }
-  function displayResultsInfo(message) { /* ...保持您工作版本中的实现... */
+  function displayResultsInfo(message) {
     if (!ui.resultDiv) return;
     ui.resultDiv.innerHTML = `<p>${escapeHtml(message)}</p>`;
   }
-  function displayError(errorMessage) { /* ...保持您工作版本中的实现... */
+  function displayError(errorMessage) {
     if (!ui.resultDiv) { console.error("F4-DENSITY: Error display failed, ui.resultDiv not found. Error: " + escapeHtml(errorMessage)); return; }
     ui.resultDiv.innerHTML = `<p style="color: red; font-weight: bold;">错误：${escapeHtml(errorMessage)}</p>`;
   }
@@ -279,7 +258,7 @@
       return;
     }
 
-    // --- 关键修改：在执行任何F4特定操作前，调用全局清除函数 ---
+    // --- 在执行任何F4特定操作前，调用全局清除函数 ---
     if (typeof clearOverlays === "function") { // clearOverlays 来自 map-utils.js
       console.log("F4-DENSITY (handleAnalyzeDensity): 调用全局 clearOverlays()。");
       clearOverlays(); // 这会清除所有模块的覆盖物，包括F4通过allFeatureOverlays注册的
@@ -294,13 +273,13 @@
     appState.gridCellPolygons.clear(); // 清空F4用于快速查找单元格的Map
     updateTimeDisplay();
 
-    // 前端输入参数获取和校验 (保持您工作版本中的详细校验)
-    const rawInputs = { /* ... */ }; /* 同您工作版本 */
+    // 前端输入参数获取和校验
+    const rawInputs = { /* ... */ };
     rawInputs.gridSize= ui.gridSize.value; rawInputs.startTime= ui.startTime.value;
     rawInputs.endTime= ui.endTime.value; rawInputs.timeSlotMinutes= ui.timeSlotMinutes.value;
     rawInputs.minLongitude= ui.minLongitude.value; rawInputs.maxLatitude= ui.maxLatitude.value;
     rawInputs.maxLongitude= ui.maxLongitude.value; rawInputs.minLatitude= ui.minLatitude.value;
-    const currentParams = {}; const errors = []; /* 同您工作版本 */
+    const currentParams = {}; const errors = [];
     currentParams.gridSize = Number.parseFloat(rawInputs.gridSize);
     if (isNaN(currentParams.gridSize) || currentParams.gridSize <= 0) errors.push("网格大小必须为有效的正数。");
     currentParams.timeSlotMinutes = Number.parseInt(rawInputs.timeSlotMinutes, 10);
@@ -336,8 +315,8 @@
       }
       appState.densityResult = resultData;
 
-      // 计算全局有效最大密度 (保持您工作版本中的逻辑)
-      const allNonZeroDensities = []; /* ... */ // 同您工作版本
+      // 计算全局有效最大密度
+      const allNonZeroDensities = [];
       if (appState.densityResult.densityMap) {
         Object.values(appState.densityResult.densityMap).forEach((slotData) => {
           if (typeof slotData === "object" && slotData !== null) {
@@ -385,7 +364,7 @@
   }
 
   // --- 8. 事件监听器设置 ---
-  function setupEventListeners() { /* ...保持您工作版本中的实现... */
+  function setupEventListeners() { /* ... */
     if (!ui.analyzeBtn && !ui.prevTimeSlotBtn && !ui.nextTimeSlotBtn) { console.error("F4-DENSITY: 关键UI按钮未能获取。"); return; }
     if (ui.analyzeBtn) { ui.analyzeBtn.addEventListener("click", handleAnalyzeDensity); }
     if (ui.prevTimeSlotBtn) {
@@ -465,9 +444,6 @@
     }, MAX_MAP_WAIT_TIME_F4_local);
   });
 
-  // window.mapVisualizer = mapVisualizer; // 不再需要全局暴露整个 mapVisualizer
-  // 如果 map-utils.js 需要调用 F4 的特定清除（现在不需要了，因为它会处理 allFeatureOverlays），
-  // 我们可以考虑只暴露一个 window.clearF4Overlays 函数。
-  // 但根据当前“全局clearOverlays处理allFeatureOverlays”的策略，F4模块不需要暴露自己的清除函数。
+
 
 })(BMapGL, window, document);

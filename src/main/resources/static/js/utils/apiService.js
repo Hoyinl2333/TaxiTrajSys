@@ -1,5 +1,3 @@
-// 文件: js/utils/apiService.js
-
 /**
  * HTML转义函数，防止XSS攻击。
  * @param {string} unsafe 要转义的字符串。
@@ -17,15 +15,7 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
-/**
- * 通用的API请求函数，集成了统一的错误处理逻辑。
- * @param {string} url API的完整URL。
- * @param {object} options Fetch API的options对象 (包含 method, headers, body等)。
- * @param {string} featureName 功能模块的名称，用于日志记录。
- * @returns {Promise<object>} 成功时返回解析后的JSON业务数据。
- * @throws {Error} 失败时抛出一个Error对象，其message属性包含格式化后的错误信息，
- * 并可能包含 .errorData (解析后的后端ErrorResponse) 或 .responseText (原始文本响应) 属性。
- */
+
 async function fetchApi(url, options = {}, featureName = "API请求") {
     console.log(`${featureName}: 发起请求到 ${options.method || 'GET'} ${url}`);
     if (options.body) {
@@ -68,12 +58,7 @@ async function fetchApi(url, options = {}, featureName = "API请求") {
     return response.json(); // 成功时，解析并返回业务数据
 }
 
-/**
- * 将捕获到的错误对象格式化为用户可读的HTML字符串，并更新到指定的结果div中。
- * @param {Error} error 捕获到的Error对象 (应包含message，可能包含errorData或responseText)。
- * @param {string} resultDivId 要显示错误信息的目标div的ID。
- * @param {string} featureName 功能模块的名称，用于日志。
- */
+
 function displayFetchError(error, resultDivId, featureName = "操作") {
     const resultDiv = document.getElementById(resultDivId);
     let displayHtml = `<p class="error-message">${escapeHtml(featureName)}出错：`; // 使用更通用的前缀
@@ -115,7 +100,3 @@ function displayFetchError(error, resultDivId, featureName = "操作") {
     }
 }
 
-// TODO:如果发现escapeHtml错误就采取挂载在window上
-// 如果希望将 escapeHtml 设为全局可访问，或者通过模块导出（如果使用模块系统）
-// window.escapeHtml = escapeHtml;
-// 如果我们把这个apiService.js在html中先于其他feature js引入，那么其他js可以直接使用这里定义的escapeHtml。
