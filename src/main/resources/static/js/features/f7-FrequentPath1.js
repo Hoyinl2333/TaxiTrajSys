@@ -1,3 +1,5 @@
+// 文件: static/js/features/f7-FrequentPath1.js
+
 // --- F7模块初始化：在全局覆盖物管理器中注册专属条目 ---
 if (typeof window.allFeatureOverlays === 'undefined') {
   window.allFeatureOverlays = {};
@@ -7,9 +9,10 @@ window.allFeatureOverlays["F7_路径覆盖物"] = [];
 // console.log("F7-FrequentPath1: 已在 window.allFeatureOverlays 中初始化 'F7_路径覆盖物' 数组。");
 
 
-// 全局变量存储路径数据
-window.pathFrequenciesDataF7 = [];
+// 全局变量存储路径数据 (可以考虑将其移入IIFE或特定对象以避免污染全局，但暂时保持)
+window.pathFrequenciesDataF7 = []; // 重命名以区分
 window.currentPathIndexF7 = 0;
+// window.pathPolylines = []; // 不再需要这个独立的全局数组，将使用 allFeatureOverlays["F7_路径覆盖物"]
 
 document.addEventListener("DOMContentLoaded", () => {
   const frequentPath1Btn = document.getElementById("frequentPath1Btn");
@@ -47,6 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
       window.currentPathIndexF7 = (window.currentPathIndexF7 - 1 + window.pathFrequenciesDataF7.length) % window.pathFrequenciesDataF7.length;
       if(pathSelector) pathSelector.value = window.currentPathIndexF7;
       displayF7PathOnMap(window.currentPathIndexF7);
+      // updatePathDetails(window.currentPathIndexF7);
     });
   }
 
@@ -56,10 +60,11 @@ document.addEventListener("DOMContentLoaded", () => {
       window.currentPathIndexF7 = (window.currentPathIndexF7 + 1) % window.pathFrequenciesDataF7.length;
       if(pathSelector) pathSelector.value = window.currentPathIndexF7;
       displayF7PathOnMap(window.currentPathIndexF7);
+      // updatePathDetails(window.currentPathIndexF7);
     });
   }
 
-  // 初始化F7在allFeatureOverlays中的条目
+  // 初始化F7在allFeatureOverlays中的条目 (双重保险)
   if (typeof window.allFeatureOverlays !== 'object' || window.allFeatureOverlays === null) {
     window.allFeatureOverlays = {};
   }
@@ -71,17 +76,20 @@ document.addEventListener("DOMContentLoaded", () => {
 function performFrequentPathAnalysis1(k, minDistance) {
   const resultDiv = document.getElementById("f7_result");
   const pathSelectorContainer = document.getElementById("pathSelectorContainer");
+  // const pathDetails = document.getElementById("path_details");
 
   resultDiv.innerHTML = "<p>正在进行全市频繁路径分析...</p>";
   if (pathSelectorContainer) pathSelectorContainer.style.display = "none";
+  // if (pathDetails) pathDetails.style.display = "none";
 
-  // --- 在执行任何F7特定操作前，调用全局清除函数 ---
+  // --- 关键修改：在执行任何F7特定操作前，调用全局清除函数 ---
   if (typeof clearOverlays === "function") {
     // console.log("F7 (performFrequentPathAnalysis1): 调用全局 clearOverlays()。");
     clearOverlays();
   } else {
     console.warn("F7 (performFrequentPathAnalysis1): 全局 clearOverlays() 函数未定义!");
   }
+  // 原先的 clearPathPolylines(); 不再需要，因为全局 clearOverlays 会处理 F7_路径覆盖物
 
   const params = {
     k: Number.parseInt(k, 10),
@@ -119,6 +127,7 @@ function performFrequentPathAnalysis1(k, minDistance) {
           }
           if (f7PathSelectorContainer) f7PathSelectorContainer.style.display = "flex";
           displayF7PathOnMap(0);
+          // updatePathDetails(0);
         } else {
           f7ResultDiv.innerHTML = "<p>未获取到有效的全市频繁路径结果。</p>";
           if (f7PathSelectorContainer) f7PathSelectorContainer.style.display = "none";
@@ -136,6 +145,9 @@ function performFrequentPathAnalysis1(k, minDistance) {
 }
 
 function displayF7PathOnMap(pathIndex) {
+  // 全局清除已在 performFrequentPathAnalysis1 开头或切换路径时处理
+  // 这里不需要再次调用全局 clearOverlays，但如果只想清除F7自己的上一次绘制，则需要。
+  // 按照“每个任务开始时清除所有”的原则，切换路径也算一个小任务。
   if (typeof clearOverlays === "function") {
     // console.log("F7 (displayF7PathOnMap): 为显示新路径，调用全局 clearOverlays()。");
     clearOverlays(); // 清除所有，然后重绘F7的这条路径
@@ -162,7 +174,7 @@ function displayF7PathOnMap(pathIndex) {
         strokeOpacity: 0.8,
       });
       map.addOverlay(polyline);
-      // --- 将覆盖物添加到 F7 在全局管理器中的专属数组 ---
+      // --- 关键修改：将覆盖物添加到 F7 在全局管理器中的专属数组 ---
       window.allFeatureOverlays["F7_路径覆盖物"].push(polyline);
 
       if (data.points.length > 0) {
