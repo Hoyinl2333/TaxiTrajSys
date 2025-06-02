@@ -14,10 +14,10 @@ import java.util.stream.Stream;
  * 将原始数据转化为结构化对象
  */
 public interface TaxiRecordParser {
-    // 一次性加载数据
+    // 保留旧方法，一次性加载数据
     NavigableMap<LocalDateTime, TaxiRecord> parse(Resource resource)throws IOException; // 声明 IOException
 
-    // 流式解析方法
+    // 新增方法，流式解析方法
     Stream<TaxiRecord> parseAsStream(Resource resource) throws IOException; // 声明 IOException
 
 }
