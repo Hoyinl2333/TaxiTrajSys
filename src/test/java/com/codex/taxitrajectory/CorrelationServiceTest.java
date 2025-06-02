@@ -7,6 +7,7 @@ import com.codex.taxitrajectory.model.query.CorrelationQuery.RegionSingleCorrela
 import com.codex.taxitrajectory.model.result.CorrelationResult;
 import com.codex.taxitrajectory.repository.TaxiRepository; // 实际注入
 import com.codex.taxitrajectory.service.CorrelationService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -107,5 +108,11 @@ class CorrelationServiceTest {
             assertTrue(entry.getValue()[1] >= 0, "离开区域的车流量不应为负");
         }
         logger.info("F6测试: 基本执行和结构检查通过。");
+    }
+
+    @AfterEach
+    public void cleanUpAfterTest() {
+        System.gc();
+        System.out.println("测试完成，已执行清理操作。");
     }
 }

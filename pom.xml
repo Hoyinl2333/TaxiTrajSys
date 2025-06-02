@@ -17,7 +17,7 @@
 	<!-- 项目的基本信息 -->
 	<groupId>com.codex</groupId>
 	<artifactId>TaxiTrajectory</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>2.1</version>
 	<name>TaxiTrajectory</name>
 	<description>TaxiTrajectory</description>
 

@@ -2,6 +2,7 @@ package com.codex.taxitrajectory;
 
 import com.codex.taxitrajectory.model.core.TaxiRecord;
 import com.codex.taxitrajectory.repository.TaxiRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -235,5 +236,11 @@ public class TaxiRepositoryTest {
 
         // 内容应该相同但可能是不同的对象
         assertEquals(records1.size(), records2.size(), "刷新前后记录数量应相同");
+    }
+
+    @AfterEach
+    public void cleanUpAfterTest() {
+        System.gc();
+        System.out.println("测试完成，已执行清理操作。");
     }
 }

@@ -4,6 +4,7 @@ import com.codex.taxitrajectory.model.core.TaxiRecord;
 import com.codex.taxitrajectory.model.query.RegionQuery;
 import com.codex.taxitrajectory.model.result.RegionQueryResult;
 import com.codex.taxitrajectory.service.RegionQueryService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -156,4 +157,9 @@ public class RegionQueryServiceTest {
         // 直接调用Dataloader逻辑耗时：约32s
     }
 
+    @AfterEach
+    public void cleanUpAfterTest() {
+        System.gc();
+        System.out.println("测试完成，已执行清理操作。");
+    }
 }

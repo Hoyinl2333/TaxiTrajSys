@@ -3,6 +3,7 @@ package com.codex.taxitrajectory;
 import com.codex.taxitrajectory.model.query.DensityQuery;
 import com.codex.taxitrajectory.model.result.DensityAnalysisResult;
 import com.codex.taxitrajectory.service.DensityAnalysisService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -175,5 +176,11 @@ public class DensityAnalysisServiceTest {
                             System.out.println("    网格 " + entry.getKey() + " -> 密度：" + entry.getValue()));
         }
         System.out.println("----------------------------------------------------");
+    }
+
+    @AfterEach
+    public void cleanUpAfterTest() {
+        System.gc();
+        System.out.println("测试完成，已执行清理操作。");
     }
 }

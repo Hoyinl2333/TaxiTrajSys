@@ -6,13 +6,7 @@ import com.codex.taxitrajectory.model.query.TravelTimeQuery;
 import com.codex.taxitrajectory.model.result.TravelTimeResult;
 import com.codex.taxitrajectory.service.TravelTimeService;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -240,5 +234,11 @@ class TravelTimeServiceTest {
         } else {
             log.info("    时间段 [{} - {}]: 未找到有效路径 ❌ (结果为 null 或 isFound()=false)", startTimeStr, endTimeStr);
         }
+    }
+
+    @AfterEach
+    public void cleanUpAfterTest() {
+        System.gc();
+        System.out.println("测试完成，已执行清理操作。");
     }
 }

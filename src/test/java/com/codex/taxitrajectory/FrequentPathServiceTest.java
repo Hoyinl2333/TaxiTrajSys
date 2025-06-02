@@ -7,10 +7,7 @@ import com.codex.taxitrajectory.model.query.FrequentPathQuery;
 import com.codex.taxitrajectory.model.result.FrequentPathResult;
 import com.codex.taxitrajectory.service.FrequentPathService;
 
-import org.junit.jupiter.api.Disabled; // 保留 @Disabled 注解
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -228,5 +225,11 @@ class FrequentPathServiceTest {
                 totalMemoryBytes / (1024 * 1024), // 转换为 MB
                 maxMemoryBytes == Long.MAX_VALUE ? "无限制" : maxMemoryBytes / (1024 * 1024) // 转换为 MB
         );
+    }
+
+    @AfterEach
+    public void cleanUpAfterTest() {
+        System.gc();
+        System.out.println("测试完成，已执行清理操作。");
     }
 }
