@@ -154,6 +154,7 @@ public class InMemoryTaxiCache {
      * @return Caffeine 缓存统计信息对象
      */
     public com.github.benmanes.caffeine.cache.stats.CacheStats getStats() {
+        // 获取统计信息通常不涉及敏感操作，可以不加日志开关，或者根据需要添加
         return cache.stats();
     }
 }
