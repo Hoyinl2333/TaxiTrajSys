@@ -75,12 +75,8 @@ public class FrequentPathController {
         logger.info("请求参数 : ID=[{}], 参数=[{}]", requestId, query.toString());
 
         if (!query.isRegionQuery()) {
-            // 这种情况表明客户端可能错误地调用了regional接口却没有提供区域参数
-            // 或者DTO设计上允许regionA/B为null，但此接口业务上不允许。
-            // GlobalExceptionHandler会捕获此IllegalArgumentException。
             throw new IllegalArgumentException("区域间频繁路径查询 (F8) 必须提供起始区域A和目标区域B。");
         }
-
 
         FrequentPathResult result = frequentPathService.analyzeFrequentPaths(query);
 

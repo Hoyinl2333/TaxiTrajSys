@@ -40,7 +40,7 @@ public class TaxiController {
             @PathVariable @NotNull(message = "出租车ID不能为空")
             @Min(value = 1, message = "出租车ID必须是大于0的数字")
             @Max(value = 10357,message = "出租车ID必须是小于10358的数字")
-            Long id, // 将类型从 String 修改为 Long
+            Long id,
             HttpServletRequest request) {
 
         String requestId = UUID.randomUUID().toString().substring(0, 8);
@@ -53,12 +53,11 @@ public class TaxiController {
 
         List<TaxiRecord> records;
         try {
-            // TaxiRepository 通常期望的是字符串ID，所以这里需要将 Long 转换回 String
             records = taxiRepository.getRecordsByTaxiIdAsList(String.valueOf(id));
         } catch (Exception e) {
             logger.error("获取出租车轨迹数据时发生异常 : ID=[{}], 出租车ID=[{}], 错误=[{}]",
                     requestId, id, e.getMessage(), e);
-            throw e; // 重新抛出，让GlobalExceptionHandler处理
+            throw e;
         }
 
         long durationMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - processingStartTimeNanos);
