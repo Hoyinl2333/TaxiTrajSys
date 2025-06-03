@@ -41,11 +41,8 @@ public class FrequentPathController {
 
         logger.info("==================== 请求处理开始 : API=[全市频繁路径分析F7] ====================");
         logger.info("接收请求 : 方法=[{}], 路径=[{}], 请求ID=[{}]", request.getMethod(), request.getRequestURI(), requestId);
-        // 考虑 FrequentPathQuery 的 toString() 是否合适，或者记录关键字段
-        logger.info("请求参数 : ID=[{}], 参数=[{}]", requestId, query.toString());
 
-        // 移除了手动校验 (query == null || !query.isValid())
-        // @Valid 会处理DTO的校验，失败则由GlobalExceptionHandler捕获
+        logger.info("请求参数 : ID=[{}], 参数=[{}]", requestId, query.toString());
 
         FrequentPathResult result = frequentPathService.analyzeFrequentPaths(query);
 
@@ -77,14 +74,6 @@ public class FrequentPathController {
         logger.info("接收请求 : 方法=[{}], 路径=[{}], 请求ID=[{}]", request.getMethod(), request.getRequestURI(), requestId);
         logger.info("请求参数 : ID=[{}], 参数=[{}]", requestId, query.toString());
 
-        // 移除了手动校验 (query == null || !query.isRegionQuery() || !query.isValid())
-        // @Valid 会处理DTO的校验。
-        // 对于 !query.isRegionQuery() 这种业务逻辑（即F8查询必须提供regionA和regionB），
-        // 如果 FrequentPathQuery 的 @Valid 不能完全覆盖（例如，regionA和regionB本身是@NotNull，但需要它们同时存在），
-        // 那么这个检查应该在 Service 层进行，如果校验失败则抛出 IllegalArgumentException。
-        // 或者，为 FrequentPathQuery 创建一个更复杂的类级别校验注解，专门用于F8场景，使用校验组 (groups)。
-        // 目前，我们假设 @Valid 结合 FrequentPathQuery 内部的注解（包括 @Valid on Region）已足够。
-        // 如果 Service 层发现是F8场景但区域信息不完整，它应该抛出异常。
         if (!query.isRegionQuery()) {
             // 这种情况表明客户端可能错误地调用了regional接口却没有提供区域参数
             // 或者DTO设计上允许regionA/B为null，但此接口业务上不允许。

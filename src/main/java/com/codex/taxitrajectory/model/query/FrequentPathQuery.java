@@ -101,12 +101,4 @@ public class FrequentPathQuery {
         return regionA != null && regionB != null;
     }
 
-    // isValid() 方法已被移除。
-    // 对于F8查询时，regionA和regionB是否必须存在的校验：
-    // 如果API设计为特定端点总是F8，那么Controller可以在调用服务前检查这两个字段是否为null。
-    // 或者，可以使用JSR 303的校验组(groups)功能，为F8查询定义一个组，
-    // 然后在regionA和regionB上添加@NotNull(groups = F8.class)。
-    // 目前的简化做法是，如果客户端意图是F8查询，它应该提供这两个区域；如果未提供，
-    // isRegionQuery()会返回false，服务层逻辑会按F7（或报错，取决于具体实现）处理。
-    // @Valid 会确保如果regionA/regionB被提供了，它们内部是有效的。
 }

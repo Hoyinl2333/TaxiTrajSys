@@ -8,7 +8,6 @@ import java.util.Objects;
 
 @Data
 public class PathFrequency {
-    // private Path path; // 旧的字段，可以选择移除或保留
     private List<PointCoordinate> pathCoordinates; // 新增：存储路径的网格中心点坐标序列
     private int frequency;
 
@@ -18,7 +17,6 @@ public class PathFrequency {
 
     // 修改构造函数以接收坐标列表
     public PathFrequency(List<PointCoordinate> pathCoordinates, int frequency) {
-        // this.path = null; // 如果移除了旧字段
         this.pathCoordinates = pathCoordinates;
         this.frequency = frequency;
     }
