@@ -27,4 +27,7 @@ public class Path {
         this.cellIdSequence = Collections.unmodifiableList(cellIdSequence);
     }
 
+    public void get_void(){
+        return ;
+    }
 }
